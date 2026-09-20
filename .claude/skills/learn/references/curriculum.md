@@ -14,8 +14,8 @@ exercises for code neither of us has seen would be invention, not planning.
 |---|---|---|
 | 2a part 1 | Life without a container | **done** — 2026-08-29 |
 | 2a part 2 | Registering and resolving | **done** — 2026-09-20 |
-| 2b | Service lifetimes | **current** — steps 1-3 written, 4-5 pending |
-| 2c | Configuration → options pattern | not started |
+| 2b | Service lifetimes | **done** — 2026-09-20 |
+| 2c | Configuration → options pattern | **current** |
 | 2d | Health checks | not started |
 | 2e | Minimal API vs controller | not started |
 

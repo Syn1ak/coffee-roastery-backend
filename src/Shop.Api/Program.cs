@@ -21,9 +21,9 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-app.MapGet("/hopper", (HopperMonitor monitor) => monitor.GetSize());
+app.MapGet("/hopper", (IIdSingleton monitor) => monitor.GetSize());
 
-app.MapGet("/hopper/summary", (HopperMonitor monitor) => monitor.GetSentence());
+app.MapGet("/hopper/summary", (IIdSingleton monitor) => monitor.GetSentence());
 
 app.MapGet("/hopper/ids", (
     IIdSingleton singleton,
