@@ -13,8 +13,8 @@ exercises for code neither of us has seen would be invention, not planning.
 | Exercise | Concept | Status |
 |---|---|---|
 | 2a part 1 | Life without a container | **done** — 2026-08-29 |
-| 2a part 2 | Registering and resolving | **current** |
-| 2b | Service lifetimes | not started |
+| 2a part 2 | Registering and resolving | **done** — 2026-09-20 |
+| 2b | Service lifetimes | **current** — steps 1-3 written, 4-5 pending |
 | 2c | Configuration → options pattern | not started |
 | 2d | Health checks | not started |
 | 2e | Minimal API vs controller | not started |
@@ -64,7 +64,7 @@ arrives as untyped strings; everything ends up in one file. They also wrote an
 - `new` **welds** the endpoint to one concrete class. No fake for tests, no per-
   environment implementation. This is the wall that hurts most once tests exist.
 
-### Part 2 — registering and resolving *(current)*
+### Part 2 — registering and resolving *(done)*
 
 Rewrite so that:
 

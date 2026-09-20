@@ -1,8 +1,23 @@
 namespace Shop.Api.HopperMonitor;
 
-public class HopperMonitor
+public interface IId
+{
+    Guid Id { get; }
+
+     decimal GetSize();
+
+     string GetSentence();
+}
+
+public interface IIdTransient : IId { }
+public interface IIdScoped : IId { }
+public interface IIdSingleton : IId { }
+
+public class HopperMonitor : IIdSingleton, IIdScoped, IIdTransient
 {
     private readonly ILogger<HopperMonitor> _logger;
+
+    public Guid Id { get; }
 
     private readonly decimal _size = 9.5m;
     private readonly string _shopDisplayName;
@@ -11,6 +26,7 @@ public class HopperMonitor
     {
         _logger = logger;
         _shopDisplayName = config["ShopDisplayName"] ?? "Shop";
+        Id = Guid.NewGuid();
     }
 
     public decimal GetSize()
@@ -25,6 +41,11 @@ public class HopperMonitor
     public string GetSentence()
     {
         return $"It is sentence {_shopDisplayName}";
+    }
+
+    public string GetId()
+    {
+        return $"Id {Id}";
     }
 
     public string GetShopDisplayName()
