@@ -1,3 +1,4 @@
+using Shop.Api.Configuration;
 using Shop.Api.HopperAlertTracker;
 using Shop.Api.HopperMonitor;
 
@@ -8,6 +9,12 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateScopes = true;
     options.ValidateOnBuild = true;
 });
+
+
+builder.Services.AddOptions<RoasterySettings>()
+    .Bind(builder.Configuration.GetSection(RoasterySettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddScoped<IIdScoped, HopperMonitor>();
 
@@ -41,10 +48,6 @@ app.MapGet("/hopper/tracker", (HopperAlertTracker tracker, IIdScoped monitor)
         $"tracker id : {tracker.GetStoredId()}",
         $"scoped: {monitor.Id}"));
 
+app.MapGet("/config", (IConfiguration c) => c["CoffeeRoastery:ShopDisplayName"]);
+
 app.Run();
-
-
-public class AppSettings
-{
-    public string ShopDisplayName { get; set; } = string.Empty;
-}

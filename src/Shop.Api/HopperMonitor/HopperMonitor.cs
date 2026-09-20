@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Options;
+using Shop.Api.Configuration;
+
 namespace Shop.Api.HopperMonitor;
 
 public interface IId
@@ -17,15 +20,15 @@ public class HopperMonitor : IIdSingleton, IIdScoped, IIdTransient
 {
     private readonly ILogger<HopperMonitor> _logger;
 
+    private readonly IOptions<RoasterySettings> _roasterySettings;
+
     public Guid Id { get; }
 
     private readonly decimal _size = 9.5m;
-    private readonly string _shopDisplayName;
-
-    public HopperMonitor(ILogger<HopperMonitor> logger, IConfiguration config)
+    public HopperMonitor(ILogger<HopperMonitor> logger, IOptions<RoasterySettings> roasterySettings)
     {
         _logger = logger;
-        _shopDisplayName = config["ShopDisplayName"] ?? "Shop";
+        _roasterySettings = roasterySettings;
         Id = Guid.NewGuid();
     }
 
@@ -40,7 +43,7 @@ public class HopperMonitor : IIdSingleton, IIdScoped, IIdTransient
 
     public string GetSentence()
     {
-        return $"It is sentence {_shopDisplayName}";
+        return $"It is sentence {GetShopDisplayName()}";
     }
 
     public string GetId()
@@ -50,6 +53,6 @@ public class HopperMonitor : IIdSingleton, IIdScoped, IIdTransient
 
     public string GetShopDisplayName()
     {
-        return _shopDisplayName;
+        return _roasterySettings.Value.ShopDisplayName;
     }
 }

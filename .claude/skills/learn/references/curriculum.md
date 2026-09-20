@@ -15,8 +15,8 @@ exercises for code neither of us has seen would be invention, not planning.
 | 2a part 1 | Life without a container | **done** — 2026-08-29 |
 | 2a part 2 | Registering and resolving | **done** — 2026-09-20 |
 | 2b | Service lifetimes | **done** — 2026-09-20 |
-| 2c | Configuration → options pattern | **current** |
-| 2d | Health checks | not started |
+| 2c | Configuration → options pattern | **done** — 2026-09-20 |
+| 2d | Health checks | **current** |
 | 2e | Minimal API vs controller | not started |
 
 Commit after each. Small revertable commits are part of the method.
@@ -160,7 +160,7 @@ Steps 3 and 6 are where the surprises are.
 - [Nullable reference types](https://learn.microsoft.com/dotnet/csharp/nullable-references) — why `= null!` behaves differently from `= ""` here
 - [Object and collection initializers](https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/object-and-collection-initializers)
 
-### → Read only after step 2
+### → Read only after step 1
 - [Configuration in ASP.NET Core](https://learn.microsoft.com/aspnet/core/fundamentals/configuration/)
 - [Options pattern in ASP.NET Core](https://learn.microsoft.com/aspnet/core/fundamentals/configuration/options)
 - [Options pattern in .NET](https://learn.microsoft.com/dotnet/core/extensions/options)
