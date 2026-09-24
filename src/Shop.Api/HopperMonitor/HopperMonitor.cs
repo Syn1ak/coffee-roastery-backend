@@ -1,22 +1,9 @@
 using Microsoft.Extensions.Options;
 using Shop.Api.Configuration;
 
-namespace Shop.Api.HopperMonitor;
+namespace Shop.Api.Hopper;
 
-public interface IId
-{
-    Guid Id { get; }
-
-     decimal GetSize();
-
-     string GetSentence();
-}
-
-public interface IIdTransient : IId { }
-public interface IIdScoped : IId { }
-public interface IIdSingleton : IId { }
-
-public class HopperMonitor : IIdSingleton, IIdScoped, IIdTransient
+public class HopperMonitor
 {
     private readonly ILogger<HopperMonitor> _logger;
 
@@ -24,7 +11,10 @@ public class HopperMonitor : IIdSingleton, IIdScoped, IIdTransient
 
     public Guid Id { get; }
 
-    private readonly decimal _size = 9.5m;
+    private readonly decimal[] _sizes = { 150m, 50m, 5m, 0m };
+
+    private int _counter = 0;
+
     public HopperMonitor(ILogger<HopperMonitor> logger, IOptions<RoasterySettings> roasterySettings)
     {
         _logger = logger;
@@ -34,11 +24,14 @@ public class HopperMonitor : IIdSingleton, IIdScoped, IIdTransient
 
     public decimal GetSize()
     {
-        if (_size <= 10m)
+        int next = Interlocked.Increment(ref _counter);
+        int idx = next % _sizes.Length;
+        decimal curSize = _sizes[idx];
+        if (curSize <= 10m)
         {
-            _logger.LogWarning("Hopper is low: {Size}", _size);
+            _logger.LogWarning("Hopper is low: {Size}", curSize);
         }
-        return _size;
+        return curSize;
     }
 
     public string GetSentence()

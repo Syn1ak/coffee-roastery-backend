@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Shop.Api.Configuration;
-using Shop.Api.HopperAlertTracker;
-using Shop.Api.HopperMonitor;
+using Shop.Api.HealthChecks;
+using Shop.Api.Hopper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,43 +12,36 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateOnBuild = true;
 });
 
-
 builder.Services.AddOptions<RoasterySettings>()
     .Bind(builder.Configuration.GetSection(RoasterySettings.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder.Services.AddScoped<IIdScoped, HopperMonitor>();
+builder.Services.AddSingleton<HopperMonitor>();
 
-builder.Services.AddTransient<IIdTransient, HopperMonitor>();
 
-builder.Services.AddSingleton<IIdSingleton, HopperMonitor>();
-
-builder.Services.AddSingleton<HopperAlertTracker>();
+builder.Services.AddHealthChecks()       
+    .AddCheck<HopperHealthCheck>("hopper"); 
 
 var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-app.MapGet("/hopper", (IIdSingleton monitor) => monitor.GetSize());
+app.MapGet("/hopper", (HopperMonitor monitor) => monitor.GetSize());
 
-app.MapGet("/hopper/summary", (IIdSingleton monitor) => monitor.GetSentence());
+app.MapGet("/hopper/summary", (HopperMonitor monitor) => monitor.GetSentence());
 
-app.MapGet("/hopper/ids", (
-    IIdSingleton singleton,
-    IIdScoped scopedA, IIdScoped scopedB,
-    IIdTransient transientA, IIdTransient transientB) =>
-    string.Join('\n',
-        $"singleton : {singleton.Id}",
-        $"scoped   A: {scopedA.Id}",
-        $"scoped   B: {scopedB.Id}",
-        $"transient A: {transientA.Id}",
-        $"transient B: {transientB.Id}"));
-
-app.MapGet("/hopper/tracker", (HopperAlertTracker tracker, IIdScoped monitor) 
-    => string.Join('\n',
-        $"tracker id : {tracker.GetStoredId()}",
-        $"scoped: {monitor.Id}"));
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthResponseWriter.WriteJson,
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+        // Hopper is shared by all instances; 503 here would pull every instance at once.
+        [HealthStatus.Degraded] = StatusCodes.Status200OK,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+    }
+});
 
 app.MapGet("/config", (IConfiguration c) => c["CoffeeRoastery:ShopDisplayName"]);
 
