@@ -16,8 +16,8 @@ exercises for code neither of us has seen would be invention, not planning.
 | 2a part 2 | Registering and resolving | **done** — 2026-09-20 |
 | 2b | Service lifetimes | **done** — 2026-09-20 |
 | 2c | Configuration → options pattern | **done** — 2026-09-20 |
-| 2d | Health checks | **current** |
-| 2e | Minimal API vs controller | not started |
+| 2d | Health checks | **done** — 2026-09-24 |
+| 2e | Minimal API vs controller | **done** — 2026-10-03 · chose minimal APIs |
 
 Commit after each. Small revertable commits are part of the method.
 

@@ -23,7 +23,11 @@ builder.Services.AddSingleton<HopperMonitor>();
 builder.Services.AddHealthChecks()       
     .AddCheck<HopperHealthCheck>("hopper"); 
 
+builder.Services.AddControllers();
+
 var app = builder.Build();
+
+app.MapControllers();
 
 app.UseHttpsRedirection();
 
@@ -34,15 +38,7 @@ app.MapGet("/hopper/summary", (HopperMonitor monitor) => monitor.GetSentence());
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = HealthResponseWriter.WriteJson,
-    ResultStatusCodes =
-    {
-        [HealthStatus.Healthy] = StatusCodes.Status200OK,
-        // Hopper is shared by all instances; 503 here would pull every instance at once.
-        [HealthStatus.Degraded] = StatusCodes.Status200OK,
-        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
-    }
+    ResultStatusCodes = new Dictionary<HealthStatus, int>(HealthStatusCodes.ByStatus),
 });
-
-app.MapGet("/config", (IConfiguration c) => c["CoffeeRoastery:ShopDisplayName"]);
 
 app.Run();
