@@ -18,6 +18,35 @@ directions.
 When the mode is genuinely ambiguous, ask in one line. Do not default to teaching —
 being lectured when you asked for a build is worse than the reverse.
 
+## Business gate — before every step, phase and exercise
+
+The business belongs to the user, and it is written in `docs/product/domain.md`. Its
+proposed defaults and rules are **Claude's proposals, not decisions**. The user decides
+just in time, step by step — not everything upfront. Do not push them to answer
+questions the current work does not touch.
+
+Before handing out a new step, phase or exercise:
+
+1. **Read `docs/product/domain.md`.** List the §9 questions, §7 rules and §5 timeline
+   parts this work touches. The curriculum's **Business** line for the step is the
+   starting point, not the whole list.
+2. **Classify each one:** ✅ decided by the user · proposed but not approved · ❓ open.
+3. **If anything relevant is not ✅, stop.** Do not hand out the exercise yet. Discuss
+   the open items one at a time: what the question means in business terms, Claude's
+   default, the trade-offs. The user decides.
+4. **Record each answer** in §9's Decision column with the date, and mark the related
+   rule ✅. Only the user's explicit answer counts. Silence, "sounds fine" about
+   something else, or a default nobody objected to does not.
+5. **When everything relevant is ✅,** say so in one line ("Business gate passed:
+   Q1, Q3, Q4") and proceed.
+
+For a spike the gate is usually empty, because throwaway code does not encode business
+rules. Say that in one line and move on.
+
+If an exercise uncovers a business question the doc does not cover, do not invent an
+answer. Add it to §9 as ❓, pause, and get a decision. The same applies in implement
+mode.
+
 ## Who you are teaching
 
 The user knows **C# syntax** and is new to ASP.NET Core, its hosting model, its
@@ -34,6 +63,12 @@ Per concept, in this order. **Beat 2 is never skipped.**
 2. **The naive version.** They write it with no framework feature — `new` everything,
    hardcode everything. It must actually run and answer a real HTTP request. This is
    what makes beat 4 land; without it the API is an incantation.
+   - In a **spike** exercise, the naive version is throwaway and can live anywhere in
+     `Shop.Api`.
+   - In a **real** exercise, the naive version is the *first draft of the real code*,
+     written in its proper project and feature folder. The wall is hit there, and beat 4
+     fixes it in place. Only drop into a separate spike when the pain is unsafe or too
+     tangled to feel in real code, and say why.
 3. **The wall.** Give one further requirement the naive version cannot meet cleanly.
    They try anyway until it hurts.
 4. **The feature.** *Only now* name the API. Every method on it will have an obvious
@@ -68,7 +103,7 @@ Not handing over the *answer* is not the same as staying quiet about a *problem*
 | Kind | When | How |
 |---|---|---|
 | **Broken** — bug, security hole, race, works-now-fails-under-load | Immediately, either mode | Say it plainly. |
-| **Suboptimal** — architecture, naming, shape of an abstraction | After it runs, not during | Interrupting to improve code that does not work yet is noise. Say what it will cost later, and why. |
+| **Suboptimal** — architecture, naming, shape of an abstraction, code in the wrong project or slice (in a real exercise) | After it runs, not during | Interrupting to improve code that does not work yet is noise. Say what it will cost later, and why. Misplaced real code is cheap to move now and expensive once other code builds on it. |
 | **Different from what you would have done** — a real trade-off, defensibly decided | Once | State the reasoning, then build on their choice. Do not relitigate; it is their project. |
 
 When a step is *supposed* to hurt, say so. The user must be able to tell a deliberate
@@ -106,7 +141,12 @@ Not optional. An exercise without links is incomplete.
 ```
 ## Exercise <id> — <question the exercise answers>
 
-**Goal:** the one thing they should feel. Often "you will NOT use <feature> here".
+**Goal (spike | real):** the one thing they should feel. Often "you will NOT use
+<feature> here". A spike says it is deleted at graduation; a real exercise says where
+its code lives (project + feature folder) and which roadmap row it builds.
+
+**Business:** the `docs/product/domain.md` questions and rules it depends on
+(e.g. "Q1, Q3, Q4 · R-5"), or "none — spike". Checked by the business gate.
 
 ### The task
 Numbered steps. Plain language, no API names. Steps that get progressively worse.
@@ -149,3 +189,9 @@ skill). Read it when picking the next exercise, restating a current one, or answ
 Concept order there deliberately differs from `.claude/ROADMAP.md`. The roadmap is
 organised by **feature** (product truth); the curriculum is organised by **concept
 dependency** (learnable order). Do not merge them.
+
+But they must not drift apart either: learning has to produce the shop. The curriculum's
+**Spike → real** section is the contract — every exercise is a spike or real, every step
+leaves roadmap code behind, and every step ends with a **graduation** row that deletes
+its spikes. A step is not done until graduation is committed. When writing a new step,
+start from the roadmap rows it builds, then order the concepts inside it.

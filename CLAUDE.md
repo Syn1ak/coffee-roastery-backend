@@ -35,6 +35,10 @@ Open one only when the prompt actually touches its topic:
 - `.claude/ROADMAP.md` — what we are building, the phase order, and what
   "done" means for each phase. **Read before** planning work, choosing the
   next task, estimating scope, or answering "what's next" / "where are we".
+- `docs/product/domain.md` — the business: what the roastery does, actors,
+  business timeline, rules, and the user's decisions (§9). **Read before**
+  modelling an entity, writing a business rule, or designing a use case.
+  Business decisions are the user's — never fill in an undecided ❓ silently.
 
 ASP.NET Core conventions are **not** in this list — they live in the
 `aspnet-conventions` skill, which loads itself when relevant and carries the

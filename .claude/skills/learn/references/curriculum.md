@@ -1,25 +1,62 @@
 # Curriculum — concept ladder
 
 Organised by **concept dependency**, not by feature. `.claude/ROADMAP.md` says what gets
-built; this says what order it is learnable in.
+built; this says what order it is learnable in — and every step must leave a piece of
+the roadmap built behind it.
 
 Phase 0 is written out below. Later phases get written when we reach them — writing
 exercises for code neither of us has seen would be invention, not planning.
 
 ---
 
+## Spike → real
+
+Decided 2026-10-04. Learning must produce the shop, not just understanding.
+
+| Kind | What it is | Where code lives | Fate |
+|---|---|---|---|
+| **Spike** | Throwaway code built to feel a pain (beat 2–3 of the loop) | Anywhere in `Shop.Api` | **Deleted** at graduation |
+| **Real** | A roadmap feature, built properly | Its proper project and feature folder (`Domain` / `Application/<Feature>/<UseCase>` / `Infrastructure` / `Api`) | Stays |
+| **Graduation** | Last row of every step. Delete the spikes, wire what was learned into the real code | — | Leaves no toy code behind |
+
+Rules:
+
+- **Phase 0** is plumbing with no business feature yet, so spikes are normal there.
+- **From Phase 1 the exercise *is* the feature.** The naive version is the first draft
+  of the real code, and the wall is hit inside it (e.g. write the catalog query naively,
+  watch it N+1, then fix it in place). A separate spike only when the pain is unsafe or
+  too tangled to feel in real code — and say *why* it is a spike.
+- Every exercise states its kind on the **Goal** line, so it is never ambiguous whether
+  the code is meant to survive.
+- A step is not done until its graduation commit is in.
+- Every step and exercise has a **Business** line listing the `docs/product/domain.md`
+  questions it depends on. The learn skill's business gate makes sure those are decided
+  before the work starts.
+
+---
+
 ## Progress
 
-| Exercise | Concept | Status |
-|---|---|---|
-| 2a part 1 | Life without a container | **done** — 2026-08-29 |
-| 2a part 2 | Registering and resolving | **done** — 2026-09-20 |
-| 2b | Service lifetimes | **done** — 2026-09-20 |
-| 2c | Configuration → options pattern | **done** — 2026-09-20 |
-| 2d | Health checks | **done** — 2026-09-24 |
-| 2e | Minimal API vs controller | **done** — 2026-10-03 · chose minimal APIs |
+| Exercise | Concept | Kind | Status |
+|---|---|---|---|
+| 2a part 1 | Life without a container | spike | **done** — 2026-08-29 |
+| 2a part 2 | Registering and resolving | spike | **done** — 2026-09-20 |
+| 2b | Service lifetimes | spike | **done** — 2026-09-20 |
+| 2c | Configuration → options pattern | real | **done** — 2026-09-20 · `RoasterySettings` stays |
+| 2d | Health checks | real | **done** — 2026-09-24 · `/health` stays, hopper check does not |
+| 2e | Minimal API vs controller | spike | **done** — 2026-10-03 · chose minimal APIs |
+| 3a | A database with no ORM | spike | **current** |
+| 3b | Rows ↔ objects: the DbContext | real | not started |
+| 3c | Schema changes as code: migrations | real | not started |
+| 3d | Starting data: seeding | real | not started |
+| 3-grad | Graduation: Steps 2 + 3 | graduation | not started |
 
-Commit after each. Small revertable commits are part of the method.
+Commit after each. Small revertable commits are part of the method. Commit titles use
+the `2x: ...` / `3x: ...` prefix so history maps to exercises; graduation commits use
+`3-grad: ...`.
+
+Step 3 rows after 3a are a planned order only — their full text gets written when we
+reach them.
 
 ### Why this order
 
@@ -232,8 +269,87 @@ No wall here — this one is judgement, and the answer is yours.
 
 ## Closing Step 2
 
-Commit message from the roadmap:
+Closed 2026-10-03 with `2e: minimal API vs controller, choose minimal APIs`.
 
-```
-Add health check endpoint with options pattern and DI lifetime demo
-```
+Step 2 predates spike → real and had no graduation of its own. Its toys —
+`HopperMonitor`, the `/hopper` endpoints, `HopperHealthCheck`, `HealthController` — are
+removed in **3-grad**, once there is a real database to health-check instead.
+
+---
+
+# Step 3 — Persistence
+
+`.claude/ROADMAP.md` Phase 0 row: "Postgres + EF Core, first migrations · Covers: EF Core,
+migrations, data seeding".
+
+**Business:** 3a none (spike) · 3b–3d Q1 (stock model), Q3 (roast style), Q4 (bag sizes,
+grind), R-1 (money), R-10 (never hard-delete).
+
+### Why this order
+
+The roadmap puts "Docker Compose / Aspire host" last in Phase 0, but EF Core needs a
+running Postgres first. Starting one container is treated as **mechanics** inside 3a, not
+a concept; orchestration proper stays where the roadmap puts it.
+
+3a deliberately uses **no ORM**. Without it, EF Core is an incantation: `DbContext`,
+change tracking and migrations each replace a specific pain that has to be felt first.
+
+### What Step 3 leaves behind
+
+3a is a spike; 3b–3d are real. By the end of the step the repo has:
+
+- The first real catalog entity in `Shop.Domain` — the coffee from 3a, which becomes the
+  seed of Phase 1's products. Variants, categories and images are Phase 1, not here.
+- The `DbContext` and its mapping in `Shop.Infrastructure`.
+- A first migration and seed data, committed, so a fresh clone gets the same database.
+- How `Application` reaches the database (the `DbContext` directly, or a port it
+  defines) is the user's decision in 3b.
+- The entity's shape comes from the business decisions in `docs/product/domain.md`
+  listed on the **Business** line above. The business gate settles them before 3b
+  starts.
+
+**3-grad** then deletes the 3a raw-SQL code and the Step 2 toys, and replaces the hopper
+health check with a database one, so `/health` reports something real.
+
+---
+
+## Exercise 3a — What does an ORM actually replace?
+
+**Goal (spike):** feel the two jobs EF Core does — turning rows into objects, and keeping
+every copy of the database schema identical. You will NOT use EF Core here. This code is
+deleted at 3-grad.
+
+### The task
+
+Code may live anywhere in `Shop.Api` — it is a spike. Where database code *belongs* is a
+decision for 3b.
+
+1. Run Postgres in a container on your machine. Connect to it with a SQL client, create a
+   table of coffees for sale (name, origin, price per kg) by hand, insert two rows by hand.
+2. `GET /coffees` returns those rows as JSON. Open a connection, send SQL, turn each row
+   into a C# object yourself. The connection string comes from configuration, the 2c way.
+3. `POST /coffees` adds one. Then `GET /coffees?origin=...` filters — build that SQL by
+   gluing the origin into the string. Now send an origin of `x' OR '1'='1`.
+   **This step is supposed to hurt.** What came back, and why? Fix it before moving on.
+4. The shop now needs a roast level on every coffee. Add it end to end. Count every place
+   you had to edit. One sentence: what got worse?
+5. Throw the database away (remove the container *and its data*) and start a fresh one.
+   Your app now fails. One sentence: how would a teammate cloning this repo — or
+   production — get the same table, with the same changes, applied in the same order?
+
+Step 3 is the security lesson. Step 5 is the wall.
+
+### → Read now
+- [`using` / `await using`](https://learn.microsoft.com/dotnet/csharp/language-reference/statements/using) — connections must be disposed
+- [Asynchronous programming](https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/) — every database call here is async
+- [Npgsql basic usage](https://www.npgsql.org/doc/basic-usage.html) — the raw .NET driver for Postgres
+- [`postgres` Docker image](https://hub.docker.com/_/postgres) — env vars, volumes
+- [Docker Compose quickstart](https://docs.docker.com/compose/gettingstarted/)
+
+### → Read only after step 5
+- [EF Core overview](https://learn.microsoft.com/ef/core/)
+- [Migrations overview](https://learn.microsoft.com/ef/core/managing-schemas/migrations/)
+
+### → Deeper
+- [OWASP SQL injection prevention](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
+- [Npgsql connection pooling](https://www.npgsql.org/doc/connection-string-parameters.html#pooling) — why opening a connection per request is cheap
