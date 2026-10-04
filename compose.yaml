@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: shop
+    ports:
+      - "5432:5432"
+    volumes:
+      - coffee-data:/var/lib/postgresql
+  
+volumes:
+  coffee-data:
