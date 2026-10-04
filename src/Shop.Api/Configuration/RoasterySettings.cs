@@ -13,4 +13,7 @@ public class RoasterySettings
     [Required(ErrorMessage = "SupportEmailAddress is required")]
     [EmailAddress()]
     public string SupportEmailAddress { get; init; } = String.Empty;
+
+    [Required]
+    public string ConnectionString { get; init; } = String.Empty;
 }
