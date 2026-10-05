@@ -44,18 +44,35 @@ app.MapGet("/hopper", (HopperMonitor monitor) => monitor.GetSize());
 
 app.MapGet("/hopper/summary", (HopperMonitor monitor) => monitor.GetSentence());
 
-app.MapGet("/coffees", async (NpgsqlDataSource dataSource) =>
+app.MapPost("/coffees", async (CoffeeeCreateDto createDto, NpgsqlDataSource dataSource) =>
 {
-   await using var cmd = dataSource.CreateCommand("SELECT id, name, origin, price_per_kg FROM coffees;");
+   await using var cmd = dataSource.CreateCommand($"INSERT INTO coffees (name, origin, price_per_kg, grade) VALUES ($1, $2, $3, $4);");
+    cmd.Parameters.Add(new() { Value = createDto.Name });
+    cmd.Parameters.Add(new() { Value = createDto.Origin });
+    cmd.Parameters.Add(new() { Value = createDto.PricePerKg });
+    cmd.Parameters.Add(new() { Value = createDto.Grade });
+   var createdCount = await cmd.ExecuteNonQueryAsync();
+   return createdCount;
+});
+
+app.MapGet("/coffees", async (string? origin, NpgsqlDataSource dataSource) =>
+{
+    var sql = origin is null
+        ? "SELECT id, name, origin, grade, price_per_kg FROM coffees"
+        : "SELECT id, name, origin, grade, price_per_kg FROM coffees WHERE origin = $1";
+   await using var cmd = dataSource.CreateCommand(sql);
+   if (origin is not null)
+        cmd.Parameters.Add(new() { Value = origin });
    await using var reader = await cmd.ExecuteReaderAsync();
-   var coffees = new List<Coffee>([]);
+   var coffees = new List<CoffeeResponseDto>([]);
    while (await reader.ReadAsync())
     {
-        coffees.Add(new Coffee(
+        coffees.Add(new CoffeeResponseDto(
             reader.GetInt32(0),
             reader.GetString(1),
             reader.GetString(2),
-            reader.GetDecimal(3)
+            reader.GetString(3),
+            reader.GetDecimal(4)
         ));
     }
    return coffees;
