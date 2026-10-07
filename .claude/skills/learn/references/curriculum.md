@@ -45,8 +45,8 @@ Rules:
 | 2c | Configuration → options pattern | real | **done** — 2026-09-20 · `RoasterySettings` stays |
 | 2d | Health checks | real | **done** — 2026-09-24 · `/health` stays, hopper check does not |
 | 2e | Minimal API vs controller | spike | **done** — 2026-10-03 · chose minimal APIs |
-| 3a | A database with no ORM | spike | **current** |
-| 3b | Rows ↔ objects: the DbContext | real | not started |
+| 3a | A database with no ORM | spike | **done** — 2026-10-07 · deleted at 3-grad |
+| 3b | Rows ↔ objects: the DbContext | real | **current** — business gate first |
 | 3c | Schema changes as code: migrations | real | not started |
 | 3d | Starting data: seeding | real | not started |
 | 3-grad | Graduation: Steps 2 + 3 | graduation | not started |
