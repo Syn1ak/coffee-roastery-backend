@@ -41,6 +41,8 @@ public record BagPrice(BagSize Size, Money Price);
 
 public class Coffee
 {
+    public Guid Id { get; private set; }
+
     public string Name { get; private set; }
 
     public string Origin { get;private set; }
@@ -60,6 +62,7 @@ public class Coffee
         RoastStyle roastStyle,
         StockMode stockMode)
     {
+        Id = Guid.CreateVersion7();
         Name = name;
         Origin = origin;
         RoastStyle = roastStyle;
