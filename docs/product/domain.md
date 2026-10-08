@@ -279,6 +279,7 @@ reject it.
 | **Q22** | (Q1 = c) How is it decided whether a coffee is sold from roasted stock or roasted to order? | Whether a coffee carries a stock mode, and who sets it | Admin picks per coffee; new coffees default to roast to order | ✅ **(ii) admin picks per coffee** — 2026-10-07. Starting value for a new coffee: not decided yet |
 | **Q23** | Which roast styles does the shop offer? | The allowed values of a coffee's roast style (Q3) | Filter and espresso | ✅ **(i) filter and espresso only** — 2026-10-08 |
 | **Q24** | A coffee's lifecycle (§5.1): is there a hidden draft state? What must be true to publish? Can a retired coffee come back? | Coffee states and their rules | Draft → published → retired. Publish needs at least one bag size with a price. Retired is final; next year's harvest is a new coffee | ✅ **all three defaults** — 2026-10-08 |
+| **Q25** | Can a draft that was never published be retired, or only a published coffee? | Which state changes `Retire` allows | Yes — a draft can be retired too (it cannot be deleted, R-10) | ✅ **yes, a draft can be retired** — 2026-10-08 |
 
 ---
 
