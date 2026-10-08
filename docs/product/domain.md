@@ -1,6 +1,6 @@
 # The Roastery — domain brief
 
-**Status:** draft vision, written by Claude on 2026-10-04. **Nothing here is decided.**
+**Status:** draft vision, written by Claude on 2026-10-04. **Only what is marked ✅ in §9 and §7 is decided** — everything else is a proposal.
 The user is the product owner / BA. Every ❓ is a decision for them; the answer goes into
 §9, and the ❓ becomes ✅.
 
@@ -217,7 +217,7 @@ Each one is Claude's proposal until confirmed in §9.
 
 | # | Rule |
 |---|---|
-| R-1 | One currency. Money is a decimal amount + currency, rounded to 2 decimal places. Never `double`. |
+| R-1 | ✅ One currency (EUR, Q2). Money is a decimal amount + currency, rounded to 2 decimal places. Never `double`. — accepted 2026-10-08 |
 | R-2 | Displayed prices include tax (the EU convention) → **Q2** |
 | R-3 | A cart line remembers the price at the moment it was added. At checkout, if the current price differs, the customer sees the new price and must confirm it. |
 | R-4 | Stock is reserved when checkout starts and released after 15 minutes without payment. |
@@ -226,7 +226,7 @@ Each one is Claude's proposal until confirmed in §9.
 | R-7 | Refunds are made by staff only, full or partial, always with a reason, and never more than was paid. |
 | R-8 | One coupon per order. A coupon is a percentage or a fixed amount, with an expiry date, an optional minimum order, and usage limits (total and per customer). |
 | R-9 | Free shipping above a threshold amount → **Q15** |
-| R-10 | Coffees, customers and orders are never hard-deleted: orders must always be able to show what was bought. |
+| R-10 | Coffees, customers and orders are never hard-deleted: orders must always be able to show what was bought. — ✅ **coffees** accepted 2026-10-08. Customers (GDPR right to erasure) and orders: confirm at the Phase 2 / Phase 4 gates |
 | R-11 | Every change to a price, stock, order status or refund is audited: who, when, old → new. |
 | R-12 | Customers see only their own orders. Support sees all orders. Only Admin changes the catalog, prices and coupons. |
 | R-13 | A subscription order is a normal order: same prices, same stock rules, same fulfilment. |
@@ -255,10 +255,10 @@ reject it.
 
 | # | Question | Why it matters | Default | Decision |
 |---|---|---|---|---|
-| **Q1** | Stock model: (a) roasted stock, (b) roast to order, (c) hybrid? | Shapes Phases 1, 3 and 4 (§6) | (b) | |
-| **Q2** | Which country/market does the shop sell in? | Currency, whether prices include tax, shipping carrier, payment provider (Stripe does not accept merchants from every country; its test mode works anywhere for learning) | One EU country, EUR, tax-inclusive prices, domestic shipping only | |
-| **Q3** | Filter roast vs espresso roast of the same lot: one product with a variant, or two products? | The shape of the product model | Two products; roast style is a property of the coffee | |
-| **Q4** | Which bag sizes and grinds? Is grind a stock-affecting variant or a free order option? | Variant model | 250 g and 1 kg; grind = free option chosen per order line | |
+| **Q1** | Stock model: (a) roasted stock, (b) roast to order, (c) hybrid? | Shapes Phases 1, 3 and 4 (§6) | (b) | ✅ **(c) hybrid** — 2026-10-07 |
+| **Q2** | Which country/market does the shop sell in? | Currency, whether prices include tax, shipping carrier, payment provider (Stripe does not accept merchants from every country; its test mode works anywhere for learning) | One EU country, EUR, tax-inclusive prices, domestic shipping only | ✅ **Currency: EUR** — 2026-10-08. Country, tax, shipping: not decided yet |
+| **Q3** | Filter roast vs espresso roast of the same lot: one product with a variant, or two products? | The shape of the product model | Two products; roast style is a property of the coffee | ✅ **(i) two products, roast style is a property of the coffee** — 2026-10-08 |
+| **Q4** | Which bag sizes and grinds? Is grind a stock-affecting variant or a free order option? | Variant model | 250 g and 1 kg; grind = free option chosen per order line | ✅ **250 g and 1 kg; grind = free option per order line** — 2026-10-08 |
 | **Q5** | Can guests check out without an account? | Identity, orders without a user | Yes (+ R-14) | |
 | **Q6** | Guest cart + account cart on sign-in: merge, keep one, or ask? | Cart merge logic | Merge, adding up quantities | |
 | **Q7** | Price changes while an item is in a cart: old price, new price, or confirm? | Price snapshot rule | Confirm at checkout (R-3) | |
@@ -272,10 +272,13 @@ reject it.
 | **Q15** | Shipping cost: flat rate, free above a threshold, or by weight? | Checkout totals | Flat rate, free above a threshold | |
 | **Q16** | Do we build a frontend, or only the API? | Project scope | API only (OpenAPI + `.http` files); maybe a small client late | |
 | **Q17** | Wholesale (B2B) in scope? | Doubles the domain | No | |
-| **Q18** | (Only if Q1 = a) Max age of a roasted bag before it's pulled? | Freshness rule | 4 weeks | |
-| **Q19** | (Only if Q1 = b) Which roast days, cut-off time, max kg per roast day? | Roast plan, "ships on" date | Mon + Thu roasting, cut-off 23:59 the day before, 60 kg capacity per day | |
+| **Q18** | (Q1 = a or c) Max age of a roasted bag before it's pulled? | Freshness rule | 4 weeks | |
+| **Q19** | (Q1 = b or c) Which roast days, cut-off time, max kg per roast day? | Roast plan, "ships on" date | Mon + Thu roasting, cut-off 23:59 the day before, 60 kg capacity per day | |
 | **Q20** | "Notify me when back in stock"? | Extra feature | No — seasonal coffees rarely come back | |
 | **Q21** | The shop's name? | Not needed — just nicer than "Shop" | — | |
+| **Q22** | (Q1 = c) How is it decided whether a coffee is sold from roasted stock or roasted to order? | Whether a coffee carries a stock mode, and who sets it | Admin picks per coffee; new coffees default to roast to order | ✅ **(ii) admin picks per coffee** — 2026-10-07. Starting value for a new coffee: not decided yet |
+| **Q23** | Which roast styles does the shop offer? | The allowed values of a coffee's roast style (Q3) | Filter and espresso | ✅ **(i) filter and espresso only** — 2026-10-08 |
+| **Q24** | A coffee's lifecycle (§5.1): is there a hidden draft state? What must be true to publish? Can a retired coffee come back? | Coffee states and their rules | Draft → published → retired. Publish needs at least one bag size with a price. Retired is final; next year's harvest is a new coffee | ✅ **all three defaults** — 2026-10-08 |
 
 ---
 

@@ -46,7 +46,7 @@ Rules:
 | 2d | Health checks | real | **done** — 2026-09-24 · `/health` stays, hopper check does not |
 | 2e | Minimal API vs controller | spike | **done** — 2026-10-03 · chose minimal APIs |
 | 3a | A database with no ORM | spike | **done** — 2026-10-07 · deleted at 3-grad |
-| 3b | Rows ↔ objects: the DbContext | real | **current** — business gate first |
+| 3b | Rows ↔ objects: the DbContext | real | **current** — business gate passed 2026-10-08 |
 | 3c | Schema changes as code: migrations | real | not started |
 | 3d | Starting data: seeding | real | not started |
 | 3-grad | Graduation: Steps 2 + 3 | graduation | not started |
@@ -282,8 +282,9 @@ removed in **3-grad**, once there is a real database to health-check instead.
 `.claude/ROADMAP.md` Phase 0 row: "Postgres + EF Core, first migrations · Covers: EF Core,
 migrations, data seeding".
 
-**Business:** 3a none (spike) · 3b–3d Q1 (stock model), Q3 (roast style), Q4 (bag sizes,
-grind), R-1 (money), R-10 (never hard-delete).
+**Business:** 3a none (spike) · 3b–3d Q1 (stock model), Q2 (currency only), Q3 (roast
+style), Q4 (bag sizes, grind), Q22 (stock mode per coffee), Q23 (roast styles), Q24
+(coffee lifecycle), R-1 (money), R-10 (never hard-delete — coffees).
 
 ### Why this order
 
@@ -353,3 +354,85 @@ Step 3 is the security lesson. Step 5 is the wall.
 ### → Deeper
 - [OWASP SQL injection prevention](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
 - [Npgsql connection pooling](https://www.npgsql.org/doc/connection-string-parameters.html#pooling) — why opening a connection per request is cheap
+
+---
+
+## Exercise 3b — What does it take to turn rows into objects, and back?
+
+**Goal (real):** feel the two jobs of a `DbContext` — mapping and change tracking — by
+doing both by hand first, in the real code. Builds the first real catalog entity
+(`.claude/ROADMAP.md` Phase 0, "Postgres + EF Core"). Code lives in:
+
+- `Shop.Domain/Catalog/` — the `Coffee` entity and the small types it needs
+- `Shop.Application/Catalog/<UseCase>/` — `ListCoffees`, `PublishCoffee`
+- `Shop.Infrastructure/Persistence/` — everything that talks to Postgres
+- `Shop.Api` — the endpoints, minimal APIs (2e)
+
+The 3a spike stays untouched and is deleted at 3-grad. Pick routes that do not collide
+with it (e.g. under `/catalog`).
+
+**Business:** Q1 = hybrid, Q22 = admin picks stock mode per coffee, Q3 = roast style is
+a property of the coffee, Q23 = filter / espresso, Q4 = 250 g and 1 kg (grind is not on
+the coffee), Q2 = EUR, R-1 = exact decimal + currency, 2 places, Q24 = draft → published
+→ retired, publish needs ≥ 1 priced bag size, retired is final, R-10 = coffees never
+deleted. **No stock quantities yet** — that is Phase 1 / 3. Origin stays a plain text
+field; process, tasting notes and photos are Phase 1.
+
+### Decide before step 3
+
+How does `Shop.Application` reach the database? It cannot reference
+`Shop.Infrastructure`. Two shapes are defensible — try one, form an opinion, and we
+discuss it after step 3. This is an architecture decision, so it is yours.
+
+### The task
+
+1. **The coffee, with no database in mind.** Model `Coffee` in `Shop.Domain` as plain
+   C#. Every business rule above must be enforced by the class itself: it starts as a
+   draft, cannot be published without a priced bag size, cannot leave "retired", and
+   offers no way to be deleted. A price that breaks R-1 must be impossible to construct.
+   One sentence: **where did the rules end up living, and what can no longer be done to
+   a coffee from outside?**
+2. **A table for it, by hand.** In your SQL client, create the table(s) this entity
+   needs. Decide where the per-bag-size prices live. Insert two coffees by hand — one
+   draft, one published.
+3. **Read it, by hand.** `ListCoffees`: customers see published coffees only. Write the
+   query and the row → `Coffee` mapping yourself with Npgsql, in
+   `Shop.Infrastructure`. One sentence: **what did you have to do to get a row back
+   into an object whose rules from step 1 forbid building it that way?**
+4. **Change it, by hand.** `PublishCoffee`: load a draft, call your domain method, save
+   it back. One sentence: **which columns does your UPDATE write, and why those?**
+5. **The wall.** Retiring a coffee and changing a bag size price are next. Write the
+   save **once**, so it works for publish, retire and price change alike — no UPDATE per
+   operation. Try it until it hurts. One sentence: **what would your save need to know
+   that only the object, before and after, can tell it?**
+6. **Replace your mapping and your save** with the framework feature, in place, against
+   the table you made by hand in step 2. Delete the hand-written code it replaces. The
+   endpoints and the domain class must not change.
+7. **Watch it.** Make the framework print the SQL it sends. Publish a coffee and compare
+   its UPDATE with yours from step 4.
+
+Step 1 is the domain lesson. Step 5 is the wall. Step 7 is the payoff.
+
+You will still create the table by hand in 3b. That is deliberate — 3c fixes it.
+
+### → Read now
+- [Enums](https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/enum)
+- [Properties](https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/properties) — private setters, init-only
+- [Records](https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/record) — value equality, a candidate shape for a price
+- [Exceptions — creating and throwing](https://learn.microsoft.com/dotnet/csharp/fundamentals/exceptions/creating-and-throwing-exceptions) — a broken rule in step 1
+- [PostgreSQL `CREATE TABLE`](https://www.postgresql.org/docs/current/sql-createtable.html)
+- [PostgreSQL numeric types](https://www.postgresql.org/docs/current/datatype-numeric.html) — `numeric(p,s)` and R-1
+
+### → Read only after you hit the wall (step 5)
+- [EF Core overview](https://learn.microsoft.com/ef/core/)
+- [DbContext lifetime, configuration and initialization](https://learn.microsoft.com/ef/core/dbcontext-configuration/)
+- [Change tracking](https://learn.microsoft.com/ef/core/change-tracking/)
+- [Creating and configuring a model](https://learn.microsoft.com/ef/core/modeling/)
+- [Entity types with constructors](https://learn.microsoft.com/ef/core/modeling/constructors) — answers your step 3 sentence
+- [Npgsql EF Core provider](https://www.npgsql.org/efcore/)
+- [Simple logging](https://learn.microsoft.com/ef/core/logging-events-diagnostics/simple-logging) — step 7
+
+### → Deeper, once it works
+- [Tracking vs no-tracking queries](https://learn.microsoft.com/ef/core/querying/tracking)
+- [Backing fields](https://learn.microsoft.com/ef/core/modeling/backing-field)
+- [Owned entity types](https://learn.microsoft.com/ef/core/modeling/owned-entities) — one way to map a price
