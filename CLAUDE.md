@@ -39,6 +39,9 @@ Open one only when the prompt actually touches its topic:
   business timeline, rules, and the user's decisions (§9). **Read before**
   modelling an entity, writing a business rule, or designing a use case.
   Business decisions are the user's — never fill in an undecided ❓ silently.
+- `docs/try-later.md` — alternatives the user parked to try once the app is finished
+  (e.g. option A for data access, multi-currency). **Read before** proposing an
+  alternative to something already chosen; **add to it** when the user parks one.
 
 ASP.NET Core conventions are **not** in this list — they live in the
 `aspnet-conventions` skill, which loads itself when relevant and carries the

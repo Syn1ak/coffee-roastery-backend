@@ -384,6 +384,9 @@ How does `Shop.Application` reach the database? It cannot reference
 `Shop.Infrastructure`. Two shapes are defensible — try one, form an opinion, and we
 discuss it after step 3. This is an architecture decision, so it is yours.
 
+**Chosen to try (2026-10-08):** option B — a repository port defined in Application,
+implemented in Infrastructure. Option A is parked in `docs/try-later.md`.
+
 ### The task
 
 1. **The coffee, with no database in mind.** Model `Coffee` in `Shop.Domain` as plain
