@@ -50,11 +50,27 @@ public class Coffee
     public RoastStyle RoastStyle { get; private set; }
 
     private readonly List<BagPrice> _prices = [];
-    public IReadOnlyList<BagPrice> Prices => _prices;
+    public IReadOnlyList<BagPrice> Prices => _prices.AsReadOnly();
 
     public CoffeeStatus Status { get; private set; } = CoffeeStatus.Draft;
 
     public StockMode StockMode { get; private set; }
+
+    internal Coffee(
+        Guid id,
+        string name, 
+        string origin,
+        RoastStyle roastStyle,
+        StockMode stockMode,
+        CoffeeStatus status)
+    {
+        Id = id;
+        Name = name;
+        Origin = origin;
+        RoastStyle = roastStyle;
+        StockMode = stockMode;
+        Status = status;
+    }
 
     public Coffee(
         string name, 
@@ -91,5 +107,10 @@ public class Coffee
         if (_prices.Count <= 0) 
             throw new InvalidOperationException("Coffee needs a price and bag size to be published.");
         Status = CoffeeStatus.Published;
+    }
+
+    internal void RestorePrice(BagSize size, Money price)
+    {
+        _prices.Add(new BagPrice(size, price));
     }
 }

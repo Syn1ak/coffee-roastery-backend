@@ -312,6 +312,12 @@ change tracking and migrations each replace a specific pain that has to be felt 
 **3-grad** then deletes the 3a raw-SQL code and the Step 2 toys, and replaces the hopper
 health check with a database one, so `/health` reports something real.
 
+Also parked for 3-grad (decided 2026-10-11): move Infrastructure's DI registrations
+(`NpgsqlDataSource`, repositories) into an `AddInfrastructure()` extension method in
+`Shop.Infrastructure`, and make `CoffeeRepository` `internal`. Needs the
+`Microsoft.Extensions.DependencyInjection.Abstractions` package, and a decision on how
+the connection string reaches Infrastructure (`RoasterySettings` lives in `Shop.Api`).
+
 ---
 
 ## Exercise 3a — What does an ORM actually replace?

@@ -6,6 +6,8 @@ using Shop.Api.Coffee;
 using Shop.Api.Configuration;
 using Shop.Api.HealthChecks;
 using Shop.Api.Hopper;
+using Shop.Application.Catalog;
+using Shop.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,8 @@ builder.Services.AddSingleton((sp) =>
     RoasterySettings settings = sp.GetRequiredService<IOptions<RoasterySettings>>().Value;
     return NpgsqlDataSource.Create(settings.ConnectionString);
 });
+
+builder.Services.AddScoped<ICoffeeRepository, CoffeeRepository>(); 
 
 
 builder.Services.AddHealthChecks()       
@@ -76,6 +80,11 @@ app.MapGet("/coffees", async (string? origin, NpgsqlDataSource dataSource) =>
         ));
     }
    return coffees;
+});
+
+app.MapGet("/catalog/published-coffees", async (ICoffeeRepository coffeeRepository, CancellationToken ct) =>
+{
+    return await coffeeRepository.ListPublishedAsync(ct);
 });
 
 app.MapHealthChecks("/health", new HealthCheckOptions

@@ -1,3 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
+    <ItemGroup>
+        <InternalsVisibleTo Include="Shop.Infrastructure" />
+    </ItemGroup>
 </Project>
