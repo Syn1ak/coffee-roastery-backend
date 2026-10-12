@@ -22,6 +22,36 @@ public class CoffeeRepository : ICoffeeRepository
             WHERE c.status = 'Published'
             """);
         await using var reader = await cmd.ExecuteReaderAsync(ct);
+        return await ReadCoffeesAsync(reader, ct);
+    }
+
+    public async Task<Coffee?> GetByIdAsync(Guid id, CancellationToken ct)
+    {
+
+        await using var cmd = _dataSource.CreateCommand("""
+        SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency 
+            FROM coffees c 
+            LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id 
+            WHERE c.id = $1
+        """);
+        cmd.Parameters.Add(new NpgsqlParameter<Guid>() { TypedValue = id });
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        List<Coffee> coffees = await ReadCoffeesAsync(reader, ct);
+        return coffees.FirstOrDefault();
+    }
+
+    public async Task UpdateAsync(Coffee coffee, CancellationToken ct)
+    {
+        await using var cmd = _dataSource.CreateCommand("UPDATE coffees SET status = $1 WHERE id = $2");
+        cmd.Parameters.Add(new NpgsqlParameter<string> { TypedValue = coffee.Status.ToString() });
+        cmd.Parameters.Add(new NpgsqlParameter<Guid> { TypedValue = coffee.Id });
+        int rows = await cmd.ExecuteNonQueryAsync(ct);
+        if (rows != 1)
+            throw new InvalidOperationException($"Expected to update 1 coffee row for {coffee.Id}, updated {rows}.");
+    }
+
+    private static async Task<List<Coffee>> ReadCoffeesAsync(NpgsqlDataReader reader, CancellationToken ct)
+    {
         var coffeesById = new Dictionary<Guid, Coffee>();
         while (await reader.ReadAsync(ct))
         {

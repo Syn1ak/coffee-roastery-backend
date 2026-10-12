@@ -410,6 +410,24 @@ implemented in Infrastructure. Option A is parked in `docs/try-later.md`.
    into an object whose rules from step 1 forbid building it that way?**
 4. **Change it, by hand.** `PublishCoffee`: load a draft, call your domain method, save
    it back. One sentence: **which columns does your UPDATE write, and why those?**
+   *Decided 2026-10-12:* a broken business rule (no priced bag size, already retired)
+   answers **422**; an unknown id answers 404.
+4b. **Two admins at once, by hand.** *Added 2026-10-12 at the user's request: solve it
+   with Npgsql first, not EF Core.* Load → change → save has a hole when two people act
+   on the same coffee at the same time.
+   1. Reproduce it. Put a temporary pause between load and save in `PublishCoffee`.
+      While one publish is waiting, retire the same coffee by hand in your SQL client.
+      Let the publish finish. What status does the coffee have now, and which rule from
+      step 1 did that break?
+   2. Wrap load and save in one transaction, nothing else changed. Repeat. One sentence:
+      **did it help, and why not?**
+   3. Fix it by making the second writer **wait**. Where must the transaction start and
+      end now, and what does your repository port have to expose to allow that?
+   4. Fix it instead by making the second writer **fail**: the save notices the row
+      changed since it was loaded, and the caller gets a conflict response, not a silent
+      overwrite. Decide what you compare against.
+   5. Keep one. One sentence: **which, why, and what does each cost under load?**
+   Remove the pause before committing.
 5. **The wall.** Retiring a coffee and changing a bag size price are next. Write the
    save **once**, so it works for publish, retire and price change alike — no UPDATE per
    operation. Try it until it hurts. One sentence: **what would your save need to know
@@ -418,9 +436,10 @@ implemented in Infrastructure. Option A is parked in `docs/try-later.md`.
    the table you made by hand in step 2. Delete the hand-written code it replaces. The
    endpoints and the domain class must not change.
 7. **Watch it.** Make the framework print the SQL it sends. Publish a coffee and compare
-   its UPDATE with yours from step 4.
+   its UPDATE with yours from step 4, and its concurrency handling with yours from 4b.
 
-Step 1 is the domain lesson. Step 5 is the wall. Step 7 is the payoff.
+Step 1 is the domain lesson. Step 4b is the concurrency lesson. Step 5 is the wall.
+Step 7 is the payoff.
 
 You will still create the table by hand in 3b. That is deliberate — 3c fixes it.
 
@@ -431,6 +450,11 @@ You will still create the table by hand in 3b. That is deliberate — 3c fixes i
 - [Exceptions — creating and throwing](https://learn.microsoft.com/dotnet/csharp/fundamentals/exceptions/creating-and-throwing-exceptions) — a broken rule in step 1
 - [PostgreSQL `CREATE TABLE`](https://www.postgresql.org/docs/current/sql-createtable.html)
 - [PostgreSQL numeric types](https://www.postgresql.org/docs/current/datatype-numeric.html) — `numeric(p,s)` and R-1
+
+### → Read for step 4b
+- [Npgsql transactions](https://www.npgsql.org/doc/basic-usage.html#transactions)
+- [PostgreSQL transaction isolation](https://www.postgresql.org/docs/current/transaction-iso.html) — after 4b.2, not before
+- [PostgreSQL explicit locking](https://www.postgresql.org/docs/current/explicit-locking.html) — row-level locks; after 4b.2
 
 ### → Read only after you hit the wall (step 5)
 - [EF Core overview](https://learn.microsoft.com/ef/core/)
@@ -445,3 +469,4 @@ You will still create the table by hand in 3b. That is deliberate — 3c fixes i
 - [Tracking vs no-tracking queries](https://learn.microsoft.com/ef/core/querying/tracking)
 - [Backing fields](https://learn.microsoft.com/ef/core/modeling/backing-field)
 - [Owned entity types](https://learn.microsoft.com/ef/core/modeling/owned-entities) — one way to map a price
+- [Handling concurrency conflicts](https://learn.microsoft.com/ef/core/saving/concurrency) — EF's answer to 4b

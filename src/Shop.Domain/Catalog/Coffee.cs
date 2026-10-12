@@ -87,7 +87,7 @@ public class Coffee
 
     public void SetPrice(BagSize size, Money price)
     {
-        if (Status == CoffeeStatus.Retired) throw new InvalidOperationException("Retired coffee can't change.");
+        if (Status == CoffeeStatus.Retired) throw new DomainException("Retired coffee can't change.");
         if (price.Amount == 0) throw new ArgumentException("A bag must cost something.");
         _prices.RemoveAll(p => p.Size == size);
         _prices.Add(new BagPrice(size, price));
@@ -96,16 +96,16 @@ public class Coffee
     public void Retire()
     {
         if (Status == CoffeeStatus.Retired)
-            throw new InvalidOperationException("Already retired.");
+            throw new DomainException("Already retired.");
         Status = CoffeeStatus.Retired;
     }
 
     public void Publish()
     {
         if (Status == CoffeeStatus.Retired)
-            throw new InvalidOperationException("Retired coffee can't be published.");
+            throw new DomainException("Retired coffee can't be published.");
         if (_prices.Count <= 0) 
-            throw new InvalidOperationException("Coffee needs a price and bag size to be published.");
+            throw new DomainException("Coffee needs a price and bag size to be published.");
         Status = CoffeeStatus.Published;
     }
 

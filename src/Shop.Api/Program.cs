@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -7,6 +8,8 @@ using Shop.Api.Configuration;
 using Shop.Api.HealthChecks;
 using Shop.Api.Hopper;
 using Shop.Application.Catalog;
+using Shop.Application.Catalog.PublishCoffee;
+using Shop.Domain;
 using Shop.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +34,8 @@ builder.Services.AddSingleton((sp) =>
 });
 
 builder.Services.AddScoped<ICoffeeRepository, CoffeeRepository>(); 
+
+builder.Services.AddScoped<PublishCoffeeHandler>();
 
 
 builder.Services.AddHealthChecks()       
@@ -82,9 +87,24 @@ app.MapGet("/coffees", async (string? origin, NpgsqlDataSource dataSource) =>
    return coffees;
 });
 
-app.MapGet("/catalog/published-coffees", async (ICoffeeRepository coffeeRepository, CancellationToken ct) =>
+var catalog = app.MapGroup("/catalog");
+
+catalog.MapGet("/published-coffees", async (ICoffeeRepository coffeeRepository, CancellationToken ct) =>
 {
     return await coffeeRepository.ListPublishedAsync(ct);
+});
+
+catalog.MapPost("/coffees/{id:guid}/publish", async Task<Results<NoContent, NotFound, UnprocessableEntity<string>>> (Guid id, PublishCoffeeHandler handler, CancellationToken ct) =>
+{
+    try
+    {
+        bool found = await handler.HandleAsync(id, ct);
+        return found ? TypedResults.NoContent() : TypedResults.NotFound();
+    }
+    catch (DomainException e)
+    {
+        return TypedResults.UnprocessableEntity(e.Message);
+    }
 });
 
 app.MapHealthChecks("/health", new HealthCheckOptions
