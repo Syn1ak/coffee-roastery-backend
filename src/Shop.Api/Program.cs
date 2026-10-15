@@ -7,6 +7,7 @@ using Shop.Api.Coffee;
 using Shop.Api.Configuration;
 using Shop.Api.HealthChecks;
 using Shop.Api.Hopper;
+using Shop.Application;
 using Shop.Application.Catalog;
 using Shop.Application.Catalog.PublishCoffee;
 using Shop.Domain;
@@ -36,6 +37,9 @@ builder.Services.AddSingleton((sp) =>
 builder.Services.AddScoped<ICoffeeRepository, CoffeeRepository>(); 
 
 builder.Services.AddScoped<PublishCoffeeHandler>();
+
+builder.Services.AddScoped<NpgsqlUnitOfWork>();
+builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<NpgsqlUnitOfWork>());
 
 
 builder.Services.AddHealthChecks()       

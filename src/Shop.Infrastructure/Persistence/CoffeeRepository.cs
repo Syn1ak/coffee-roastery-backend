@@ -7,10 +7,12 @@ namespace Shop.Infrastructure.Persistence;
 public class CoffeeRepository : ICoffeeRepository
 {
     private readonly NpgsqlDataSource _dataSource;
+    private readonly NpgsqlUnitOfWork _npgsqlUnitOfWork;
 
-    public CoffeeRepository(NpgsqlDataSource dataSource)
+    public CoffeeRepository(NpgsqlDataSource dataSource, NpgsqlUnitOfWork npgsqlUnitOfWork)
     {
         _dataSource = dataSource;
+        _npgsqlUnitOfWork = npgsqlUnitOfWork;
     }
 
     public async Task<IReadOnlyList<Coffee>> ListPublishedAsync(CancellationToken ct)
@@ -27,12 +29,26 @@ public class CoffeeRepository : ICoffeeRepository
 
     public async Task<Coffee?> GetByIdAsync(Guid id, CancellationToken ct)
     {
-
         await using var cmd = _dataSource.CreateCommand("""
+        SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency
+            FROM coffees c
+            LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id
+            WHERE c.id = $1
+        """);
+        cmd.Parameters.Add(new NpgsqlParameter<Guid>() { TypedValue = id });
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        List<Coffee> coffees = await ReadCoffeesAsync(reader, ct);
+        return coffees.FirstOrDefault();
+    }
+
+    public async Task<Coffee?> GetByIdForUpdateAsync(Guid id, CancellationToken ct)
+    {
+        await using var cmd = _npgsqlUnitOfWork.CreateCommand("""
         SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency 
             FROM coffees c 
             LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id 
             WHERE c.id = $1
+            FOR UPDATE OF c
         """);
         cmd.Parameters.Add(new NpgsqlParameter<Guid>() { TypedValue = id });
         await using var reader = await cmd.ExecuteReaderAsync(ct);
@@ -42,7 +58,7 @@ public class CoffeeRepository : ICoffeeRepository
 
     public async Task UpdateAsync(Coffee coffee, CancellationToken ct)
     {
-        await using var cmd = _dataSource.CreateCommand("UPDATE coffees SET status = $1 WHERE id = $2");
+        await using var cmd = _npgsqlUnitOfWork.CreateCommand("UPDATE coffees SET status = $1 WHERE id = $2");
         cmd.Parameters.Add(new NpgsqlParameter<string> { TypedValue = coffee.Status.ToString() });
         cmd.Parameters.Add(new NpgsqlParameter<Guid> { TypedValue = coffee.Id });
         int rows = await cmd.ExecuteNonQueryAsync(ct);
