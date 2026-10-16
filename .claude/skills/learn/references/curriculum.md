@@ -434,6 +434,11 @@ implemented in Infrastructure. Option A is parked in `docs/try-later.md`.
    repository** (per-request dictionary id → version), not on `Coffee`. Any change to a
    coffee's prices bumps the coffee's version in the same transaction — the coffee is
    the versioned unit (applies from step 5).
+
+   *Decided 2026-10-16 (4b.5):* keep **optimistic, own `version` column** (master).
+   Coffee edits are rare admin actions, so conflicts are rare and nobody should wait on
+   a lock; `xmin` rejected because it ties the code to Postgres. Branch `4b-xmin` is
+   kept as a reference, not merged.
 5. **The wall.** Retiring a coffee and changing a bag size price are next. Write the
    save **once**, so it works for publish, retire and price change alike — no UPDATE per
    operation. Try it until it hurts. One sentence: **what would your save need to know

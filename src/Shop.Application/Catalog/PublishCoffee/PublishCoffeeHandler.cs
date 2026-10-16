@@ -8,7 +8,6 @@ public class PublishCoffeeHandler(ICoffeeRepository repository, IUnitOfWork unit
     {
         Coffee? coffee = await repository.GetByIdAsync(id, ct);
         if (coffee is null) return false;
-        await Task.Delay(TimeSpan.FromSeconds(10), ct);
 
         coffee.Publish();
 

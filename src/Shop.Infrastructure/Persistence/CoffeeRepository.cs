@@ -43,21 +43,6 @@ public class CoffeeRepository : ICoffeeRepository
         return coffees.FirstOrDefault();
     }
 
-    public async Task<Coffee?> GetByIdForUpdateAsync(Guid id, CancellationToken ct)
-    {
-        await using var cmd = _npgsqlUnitOfWork.CreateCommand("""
-        SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency, c.version
-            FROM coffees c 
-            LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id 
-            WHERE c.id = $1
-            FOR UPDATE OF c
-        """);
-        cmd.Parameters.Add(new NpgsqlParameter<Guid>() { TypedValue = id });
-        await using var reader = await cmd.ExecuteReaderAsync(ct);
-        List<Coffee> coffees = await ReadCoffeesAsync(reader, ct);
-        return coffees.FirstOrDefault();
-    }
-
     public async Task UpdateAsync(Coffee coffee, CancellationToken ct)
     {
         if (!_loadedVersions.TryGetValue(coffee.Id, out int expectedVersion)) throw new InvalidOperationException($"Coffee {coffee.Id} was not loaded before saving.");
