@@ -1,4 +1,5 @@
 using Npgsql;
+using NpgsqlTypes;
 using Shop.Application.Catalog;
 using Shop.Domain.Catalog;
 
@@ -9,7 +10,7 @@ public class CoffeeRepository : ICoffeeRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly NpgsqlUnitOfWork _npgsqlUnitOfWork;
 
-    private readonly Dictionary<Guid, int> _loadedVersions = new ();
+    private readonly Dictionary<Guid, uint> _loadedVersions = new ();
 
     public CoffeeRepository(NpgsqlDataSource dataSource, NpgsqlUnitOfWork npgsqlUnitOfWork)
     {
@@ -20,7 +21,7 @@ public class CoffeeRepository : ICoffeeRepository
     public async Task<IReadOnlyList<Coffee>> ListPublishedAsync(CancellationToken ct)
     {
         await using var cmd = _dataSource.CreateCommand("""
-            SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency, c.version
+            SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency, c.xmin
             FROM coffees c 
             LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id 
             WHERE c.status = 'Published'
@@ -32,7 +33,7 @@ public class CoffeeRepository : ICoffeeRepository
     public async Task<Coffee?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         await using var cmd = _dataSource.CreateCommand("""
-        SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency, c.version
+        SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency, c.xmin
             FROM coffees c
             LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id
             WHERE c.id = $1
@@ -46,9 +47,9 @@ public class CoffeeRepository : ICoffeeRepository
     public async Task<Coffee?> GetByIdForUpdateAsync(Guid id, CancellationToken ct)
     {
         await using var cmd = _npgsqlUnitOfWork.CreateCommand("""
-        SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency, c.version
-            FROM coffees c 
-            LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id 
+        SELECT c.id, c.name, c.origin, c.roast_style, c.stock_mode, c.status, cp.bag_size, cp.amount, cp.currency, c.xmin
+            FROM coffees c
+            LEFT JOIN coffee_prices cp ON c.id = cp.coffee_id
             WHERE c.id = $1
             FOR UPDATE OF c
         """);
@@ -60,19 +61,22 @@ public class CoffeeRepository : ICoffeeRepository
 
     public async Task UpdateAsync(Coffee coffee, CancellationToken ct)
     {
-        if (!_loadedVersions.TryGetValue(coffee.Id, out int expectedVersion)) throw new InvalidOperationException($"Coffee {coffee.Id} was not loaded before saving.");
+        if (!_loadedVersions.TryGetValue(coffee.Id, out uint expectedVersion)) throw new InvalidOperationException($"Coffee {coffee.Id} was not loaded before saving.");
+        // Postgres writes a new row version on every UPDATE, so xmin changes by itself.
+        // RETURNING hands back the new xmin; no row back means the WHERE did not match.
         await using var cmd = _npgsqlUnitOfWork.CreateCommand("""
-        UPDATE coffees 
-        SET status = $1, version = version + 1
-        WHERE id = $2 AND version = $3
+        UPDATE coffees
+        SET status = $1
+        WHERE id = $2 AND xmin = $3
+        RETURNING xmin
         """);
         cmd.Parameters.Add(new NpgsqlParameter<string> { TypedValue = coffee.Status.ToString() });
         cmd.Parameters.Add(new NpgsqlParameter<Guid> { TypedValue = coffee.Id });
-        cmd.Parameters.Add(new NpgsqlParameter<int> { TypedValue = expectedVersion });
-        int rows = await cmd.ExecuteNonQueryAsync(ct);
-        if (rows != 1)
+        cmd.Parameters.Add(new NpgsqlParameter<uint> { TypedValue = expectedVersion, NpgsqlDbType = NpgsqlDbType.Xid });
+        object? newVersion = await cmd.ExecuteScalarAsync(ct);
+        if (newVersion is null)
             throw new CoffeeConflictException(coffee.Id);
-        _loadedVersions[coffee.Id] = expectedVersion + 1;
+        _loadedVersions[coffee.Id] = (uint)newVersion;
     }
 
     private async Task<List<Coffee>> ReadCoffeesAsync(NpgsqlDataReader reader, CancellationToken ct)
@@ -104,7 +108,7 @@ public class CoffeeRepository : ICoffeeRepository
                 Money money = new Money(reader.GetDecimal(7), reader.GetString(8));
                 coffee.RestorePrice(bagSize, money);
             }
-            _loadedVersions[coffee.Id] = reader.GetInt32(9);
+            _loadedVersions[coffee.Id] = reader.GetFieldValue<uint>(9);
         }
         return coffeesById.Values.ToList();
     }
