@@ -29,3 +29,6 @@ SELECT * FROM coffees c JOIN coffee_prices cp
 ON c.id = cp.coffee_id; 
 
 UPDATE coffees SET status = 'Published' WHERE id = '01a11d34-59df-7909-97dd-6079847796ef';
+
+ALTER TABLE coffees 
+ADD COLUMN version integer NOT NULL DEFAULT 0;

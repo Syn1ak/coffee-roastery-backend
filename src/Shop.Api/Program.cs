@@ -98,7 +98,7 @@ catalog.MapGet("/published-coffees", async (ICoffeeRepository coffeeRepository, 
     return await coffeeRepository.ListPublishedAsync(ct);
 });
 
-catalog.MapPost("/coffees/{id:guid}/publish", async Task<Results<NoContent, NotFound, UnprocessableEntity<string>>> (Guid id, PublishCoffeeHandler handler, CancellationToken ct) =>
+catalog.MapPost("/coffees/{id:guid}/publish", async Task<Results<NoContent, NotFound, UnprocessableEntity<string>, Conflict>> (Guid id, PublishCoffeeHandler handler, CancellationToken ct) =>
 {
     try
     {
@@ -108,6 +108,10 @@ catalog.MapPost("/coffees/{id:guid}/publish", async Task<Results<NoContent, NotF
     catch (DomainException e)
     {
         return TypedResults.UnprocessableEntity(e.Message);
+    }
+    catch (CoffeeConflictException)
+    {
+        return TypedResults.Conflict();
     }
 });
 

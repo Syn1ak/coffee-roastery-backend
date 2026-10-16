@@ -428,6 +428,12 @@ implemented in Infrastructure. Option A is parked in `docs/try-later.md`.
       overwrite. Decide what you compare against.
    5. Keep one. One sentence: **which, why, and what does each cost under load?**
    Remove the pause before committing.
+
+   *Decided 2026-10-15 (4b.4):* try both an own `version` integer column (portable,
+   every writer must bump it) and Postgres `xmin`. The loaded version lives **in the
+   repository** (per-request dictionary id → version), not on `Coffee`. Any change to a
+   coffee's prices bumps the coffee's version in the same transaction — the coffee is
+   the versioned unit (applies from step 5).
 5. **The wall.** Retiring a coffee and changing a bag size price are next. Write the
    save **once**, so it works for publish, retire and price change alike — no UPDATE per
    operation. Try it until it hurts. One sentence: **what would your save need to know
