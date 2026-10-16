@@ -27,9 +27,9 @@ public record Money
 
     public Money(decimal amount, string currency)
     {
-        if (amount < 0) throw new ArgumentException("Money can't be negative.");
-        if (decimal.Round(amount, 2) != amount) throw new ArgumentException("Max 2 decimal places.");
-        if (currency != "EUR") throw new ArgumentException("Only EUR is sold.");
+        if (amount < 0) throw new DomainException("Money can't be negative.");
+        if (decimal.Round(amount, 2) != amount) throw new DomainException("Max 2 decimal places.");
+        if (currency != "EUR") throw new DomainException("Only EUR is sold.");
         Amount = amount;
         Currency = currency;
     }
@@ -88,7 +88,7 @@ public class Coffee
     public void SetPrice(BagSize size, Money price)
     {
         if (Status == CoffeeStatus.Retired) throw new DomainException("Retired coffee can't change.");
-        if (price.Amount == 0) throw new ArgumentException("A bag must cost something.");
+        if (price.Amount == 0) throw new DomainException("A bag must cost something.");
         _prices.RemoveAll(p => p.Size == size);
         _prices.Add(new BagPrice(size, price));
     }

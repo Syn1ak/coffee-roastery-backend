@@ -10,6 +10,7 @@ public class CoffeeRepository : ICoffeeRepository
     private readonly NpgsqlUnitOfWork _npgsqlUnitOfWork;
 
     private readonly Dictionary<Guid, int> _loadedVersions = new ();
+    private readonly Dictionary<Guid, List<BagPrice>> _loadedPrices = new ();
 
     public CoffeeRepository(NpgsqlDataSource dataSource, NpgsqlUnitOfWork npgsqlUnitOfWork)
     {
@@ -46,6 +47,7 @@ public class CoffeeRepository : ICoffeeRepository
     public async Task UpdateAsync(Coffee coffee, CancellationToken ct)
     {
         if (!_loadedVersions.TryGetValue(coffee.Id, out int expectedVersion)) throw new InvalidOperationException($"Coffee {coffee.Id} was not loaded before saving.");
+        if (!_loadedPrices.TryGetValue(coffee.Id, out List<BagPrice>? beforePrices)) throw new InvalidOperationException($"Coffee {coffee.Id} prices list missing.");
         await using var cmd = _npgsqlUnitOfWork.CreateCommand("""
         UPDATE coffees 
         SET status = $1, version = version + 1
@@ -57,7 +59,51 @@ public class CoffeeRepository : ICoffeeRepository
         int rows = await cmd.ExecuteNonQueryAsync(ct);
         if (rows != 1)
             throw new CoffeeConflictException(coffee.Id);
+
+        IReadOnlyList<BagPrice> after = coffee.Prices;
+        var added = after.Where(a => beforePrices.All(b => b.Size != a.Size));
+        var removed = beforePrices.Where(b => after.All(a => a.Size != b.Size));
+        var changed = after.Where(a => beforePrices.Any(b => b.Size == a.Size && b != a));
+
+        foreach (BagPrice price in added)
+        {
+            await using var insert = _npgsqlUnitOfWork.CreateCommand("""
+            INSERT INTO coffee_prices (coffee_id, bag_size, amount, currency)
+            VALUES ($1, $2, $3, $4)
+            """);
+            insert.Parameters.Add(new NpgsqlParameter<Guid> { TypedValue = coffee.Id });
+            insert.Parameters.Add(new NpgsqlParameter<string> { TypedValue = price.Size.ToString() });
+            insert.Parameters.Add(new NpgsqlParameter<decimal> { TypedValue = price.Price.Amount });
+            insert.Parameters.Add(new NpgsqlParameter<string> { TypedValue = price.Price.Currency });
+            await insert.ExecuteNonQueryAsync(ct);
+        }
+
+        foreach (BagPrice price in changed)
+        {
+            await using var update = _npgsqlUnitOfWork.CreateCommand("""
+            UPDATE coffee_prices SET amount = $1, currency = $2
+            WHERE coffee_id = $3 AND bag_size = $4
+            """);
+            update.Parameters.Add(new NpgsqlParameter<decimal> { TypedValue = price.Price.Amount });
+            update.Parameters.Add(new NpgsqlParameter<string> { TypedValue = price.Price.Currency });
+            update.Parameters.Add(new NpgsqlParameter<Guid> { TypedValue = coffee.Id });
+            update.Parameters.Add(new NpgsqlParameter<string> { TypedValue = price.Size.ToString() });
+            await update.ExecuteNonQueryAsync(ct);
+        }
+
+        foreach (BagPrice price in removed)
+        {
+            await using var delete = _npgsqlUnitOfWork.CreateCommand("""
+            DELETE FROM coffee_prices
+            WHERE coffee_id = $1 AND bag_size = $2
+            """);
+            delete.Parameters.Add(new NpgsqlParameter<Guid> { TypedValue = coffee.Id });
+            delete.Parameters.Add(new NpgsqlParameter<string> { TypedValue = price.Size.ToString() });
+            await delete.ExecuteNonQueryAsync(ct);
+        }
+
         _loadedVersions[coffee.Id] = expectedVersion + 1;
+        _loadedPrices[coffee.Id] = coffee.Prices.ToList();
     }
 
     private async Task<List<Coffee>> ReadCoffeesAsync(NpgsqlDataReader reader, CancellationToken ct)
@@ -91,6 +137,10 @@ public class CoffeeRepository : ICoffeeRepository
             }
             _loadedVersions[coffee.Id] = reader.GetInt32(9);
         }
+
+        foreach (Coffee coffee in coffeesById.Values)
+            _loadedPrices[coffee.Id] = coffee.Prices.ToList();
+
         return coffeesById.Values.ToList();
     }
 }

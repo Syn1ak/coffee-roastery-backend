@@ -443,6 +443,12 @@ implemented in Infrastructure. Option A is parked in `docs/try-later.md`.
    save **once**, so it works for publish, retire and price change alike — no UPDATE per
    operation. Try it until it hurts. One sentence: **what would your save need to know
    that only the object, before and after, can tell it?**
+
+   *Decided 2026-10-16 (5):* option C — the repository keeps a copy of each coffee's
+   prices at load and diffs it at save into INSERT / UPDATE / DELETE per bag size.
+   Rejected A (delete all, reinsert: breaks once cart lines or audit rows reference a
+   price row) and B (upsert: never removes a price). Retire and price change endpoints
+   added under `/catalog`.
 6. **Replace your mapping and your save** with the framework feature, in place, against
    the table you made by hand in step 2. Delete the hand-written code it replaces. The
    endpoints and the domain class must not change.

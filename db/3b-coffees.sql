@@ -28,7 +28,16 @@ VALUES ('01a11d34-59df-7909-97dd-6079847796ef', 'Kilogram1', 41.50, 'EUR');
 SELECT * FROM coffees c JOIN coffee_prices cp 
 ON c.id = cp.coffee_id; 
 
-UPDATE coffees SET status = 'Published' WHERE id = '01a11d34-59df-7909-97dd-6079847796ef';
+UPDATE coffees SET status = 'Draft' WHERE id = '01a144d2-5ed6-7e9b-b471-d68d99c9ec95';
 
 ALTER TABLE coffees 
 ADD COLUMN version integer NOT NULL DEFAULT 0;
+
+
+SELECT c.status, c.version, cp.bag_size, cp.amount FROM coffees c LEFT JOIN coffee_prices cp ON cp.coffee_id = c.id WHERE c.id = '01a144d2-5ed6-7e9b-b471-d68d99c9ec95';
+
+-- curl -i -X PUT localhost:5256/catalog/coffees/01a144d2-5ed6-7e9b-b471-d68d99c9ec95/prices/Grams250 -H 'Content-Type: application/json' -d '{"amount": 12.00}'
+
+-- curl -i -X POST localhost:5256/catalog/coffees/01a144d2-5ed6-7e9b-b471-d68d99c9ec95/publish
+
+UPDATE coffees SET version = version + 1 WHERE id = '01a144d2-5ed6-7e9b-b471-d68d99c9ec95';

@@ -9,8 +9,11 @@ using Shop.Api.HealthChecks;
 using Shop.Api.Hopper;
 using Shop.Application;
 using Shop.Application.Catalog;
+using Shop.Application.Catalog.ChangeBagPrice;
 using Shop.Application.Catalog.PublishCoffee;
+using Shop.Application.Catalog.RetireCoffee;
 using Shop.Domain;
+using Shop.Domain.Catalog;
 using Shop.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +40,8 @@ builder.Services.AddSingleton((sp) =>
 builder.Services.AddScoped<ICoffeeRepository, CoffeeRepository>(); 
 
 builder.Services.AddScoped<PublishCoffeeHandler>();
+builder.Services.AddScoped<RetireCoffeeHandler>();
+builder.Services.AddScoped<ChangeBagPriceHandler>();
 
 builder.Services.AddScoped<NpgsqlUnitOfWork>();
 builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<NpgsqlUnitOfWork>());
@@ -103,6 +108,40 @@ catalog.MapPost("/coffees/{id:guid}/publish", async Task<Results<NoContent, NotF
     try
     {
         bool found = await handler.HandleAsync(id, ct);
+        return found ? TypedResults.NoContent() : TypedResults.NotFound();
+    }
+    catch (DomainException e)
+    {
+        return TypedResults.UnprocessableEntity(e.Message);
+    }
+    catch (CoffeeConflictException)
+    {
+        return TypedResults.Conflict();
+    }
+});
+
+catalog.MapPost("/coffees/{id:guid}/retire", async Task<Results<NoContent, NotFound, UnprocessableEntity<string>, Conflict>> (Guid id, RetireCoffeeHandler handler, CancellationToken ct) =>
+{
+    try
+    {
+        bool found = await handler.HandleAsync(id, ct);
+        return found ? TypedResults.NoContent() : TypedResults.NotFound();
+    }
+    catch (DomainException e)
+    {
+        return TypedResults.UnprocessableEntity(e.Message);
+    }
+    catch (CoffeeConflictException)
+    {
+        return TypedResults.Conflict();
+    }
+});
+
+catalog.MapPut("/coffees/{id:guid}/prices/{size}", async Task<Results<NoContent, NotFound, UnprocessableEntity<string>, Conflict>> (Guid id, BagSize size, ChangeBagPriceRequest payload, ChangeBagPriceHandler handler, CancellationToken ct) =>
+{
+    try
+    {
+        bool found = await handler.HandleAsync(id, size, payload.Amount, ct);
         return found ? TypedResults.NoContent() : TypedResults.NotFound();
     }
     catch (DomainException e)
