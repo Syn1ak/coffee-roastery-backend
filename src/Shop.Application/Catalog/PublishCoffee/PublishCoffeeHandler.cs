@@ -2,7 +2,7 @@ using Shop.Domain.Catalog;
 
 namespace Shop.Application.Catalog.PublishCoffee;
 
-public class PublishCoffeeHandler(ICoffeeRepository repository, IUnitOfWork unitOfWork)
+public class PublishCoffeeHandler(ICoffeeRepository repository)
 {
     public async Task<bool> HandleAsync(Guid id, CancellationToken ct)
     {
@@ -11,9 +11,7 @@ public class PublishCoffeeHandler(ICoffeeRepository repository, IUnitOfWork unit
 
         coffee.Publish();
 
-        await unitOfWork.BeginAsync(ct);
         await repository.UpdateAsync(coffee, ct);
-        await unitOfWork.CommitAsync(ct);
         return true;
     }
 }

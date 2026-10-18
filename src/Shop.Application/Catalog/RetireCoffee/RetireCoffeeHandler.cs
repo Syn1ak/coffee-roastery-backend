@@ -2,7 +2,7 @@ using Shop.Domain.Catalog;
 
 namespace Shop.Application.Catalog.RetireCoffee;
 
-public class RetireCoffeeHandler(ICoffeeRepository coffeeRepository, IUnitOfWork unitOfWork)
+public class RetireCoffeeHandler(ICoffeeRepository coffeeRepository)
 {
     public async Task<bool> HandleAsync(Guid id, CancellationToken ct)
     {
@@ -11,9 +11,7 @@ public class RetireCoffeeHandler(ICoffeeRepository coffeeRepository, IUnitOfWork
 
         coffee.Retire();
 
-        await unitOfWork.BeginAsync(ct);
         await coffeeRepository.UpdateAsync(coffee, ct);
-        await unitOfWork.CommitAsync(ct);
         return true;
     }
 }

@@ -15,6 +15,7 @@ using Shop.Application.Catalog.RetireCoffee;
 using Shop.Domain;
 using Shop.Domain.Catalog;
 using Shop.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,14 +38,14 @@ builder.Services.AddSingleton((sp) =>
     return NpgsqlDataSource.Create(settings.ConnectionString);
 });
 
+builder.Services.AddDbContext<ShopDb>((sp, o) =>
+    o.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>()));
+
 builder.Services.AddScoped<ICoffeeRepository, CoffeeRepository>(); 
 
 builder.Services.AddScoped<PublishCoffeeHandler>();
 builder.Services.AddScoped<RetireCoffeeHandler>();
-builder.Services.AddScoped<ChangeBagPriceHandler>();
-
-builder.Services.AddScoped<NpgsqlUnitOfWork>();
-builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<NpgsqlUnitOfWork>());
+builder.Services.AddScoped<ChangeBagPriceHandler>(); 
 
 
 builder.Services.AddHealthChecks()       

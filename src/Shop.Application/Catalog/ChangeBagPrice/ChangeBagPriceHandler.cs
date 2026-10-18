@@ -2,7 +2,7 @@ using Shop.Domain.Catalog;
 
 namespace Shop.Application.Catalog.ChangeBagPrice;
 
-public class ChangeBagPriceHandler(ICoffeeRepository coffeeRepository, IUnitOfWork unitOfWork)
+public class ChangeBagPriceHandler(ICoffeeRepository coffeeRepository)
 {
     public async Task<bool> HandleAsync(Guid id, BagSize size, decimal amount, CancellationToken ct)
     {
@@ -12,9 +12,7 @@ public class ChangeBagPriceHandler(ICoffeeRepository coffeeRepository, IUnitOfWo
         Money money = new Money(amount, "EUR");
         coffee.SetPrice(size, money);
 
-        await unitOfWork.BeginAsync(ct);
         await coffeeRepository.UpdateAsync(coffee, ct);
-        await unitOfWork.CommitAsync(ct);
         return true;
     }
 }
