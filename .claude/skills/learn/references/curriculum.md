@@ -46,8 +46,8 @@ Rules:
 | 2d | Health checks | real | **done** — 2026-09-24 · `/health` stays, hopper check does not |
 | 2e | Minimal API vs controller | spike | **done** — 2026-10-03 · chose minimal APIs |
 | 3a | A database with no ORM | spike | **done** — 2026-10-07 · deleted at 3-grad |
-| 3b | Rows ↔ objects: the DbContext | real | **current** — business gate passed 2026-10-08 |
-| 3c | Schema changes as code: migrations | real | not started |
+| 3b | Rows ↔ objects: the DbContext | real | **done** — 2026-10-18 · `ShopDb`, `CoffeeConfiguration`, EF-backed `CoffeeRepository` stay |
+| 3c | Schema changes as code: migrations | real | **next** — business gate not yet run |
 | 3d | Starting data: seeding | real | not started |
 | 3-grad | Graduation: Steps 2 + 3 | graduation | not started |
 
@@ -452,8 +452,39 @@ implemented in Infrastructure. Option A is parked in `docs/try-later.md`.
 6. **Replace your mapping and your save** with the framework feature, in place, against
    the table you made by hand in step 2. Delete the hand-written code it replaces. The
    endpoints and the domain class must not change.
+
+   *Decided 2026-10-18 (6):*
+   - Prices are an **owned type** (`OwnsMany` into `coffee_prices`, key
+     `(coffee_id, bag_size)`, `Money` nested with `OwnsOne`), not a separate entity: a
+     price is a value that belongs to its coffee and is never queried on its own.
+   - `version` is a **shadow concurrency token**, bumped by hand in
+     `CoffeeRepository.UpdateAsync` (`OriginalValue + 1`). That also makes a price-only
+     change update and check the coffee row.
+   - **Domain bent by one line:** a private `BagPrice(BagSize size)` constructor for EF,
+     because the positional record's `Price` is an owned navigation and can't be bound
+     through a constructor. A mapping-only fix (complex type) was tried and didn't bind
+     either. EF loads `Coffee` through its public constructor (fewest parameters), which
+     is accepted for now. The `internal` load constructor and `RestorePrice` are deleted.
+   - **`IUnitOfWork` and `NpgsqlUnitOfWork` deleted:** the repository calls
+     `SaveChangesAsync`. Bring a port back when one use case has to save two aggregates
+     together (Phase 3 checkout).
+   - EF configuration lives in `Shop.Infrastructure/Persistence/Configurations/`.
 7. **Watch it.** Make the framework print the SQL it sends. Publish a coffee and compare
    its UPDATE with yours from step 4, and its concurrency handling with yours from 4b.
+
+   *Done 2026-10-18 (7):* the
+   `Microsoft.EntityFrameworkCore.Database.Command: Information` log level is set in
+   `appsettings.Development.json`. Teach-back passed. Key points:
+   - The version's new value is now computed in C# and sent as a parameter, not
+     computed by the database with `version + 1`.
+   - The loaded version lives in the change tracker's snapshot (`OriginalValue`).
+   - The UPDATE sets only the columns whose values differ from the snapshot.
+   - EF can't bump an app-managed concurrency token by itself: it only compares it, and
+     "a price change bumps the coffee" is a domain rule.
+
+   The 409 path was verified with a row lock held in psql. Catching the wrong exception
+   type (`System.Data.DBConcurrencyException` instead of `DbUpdateConcurrencyException`)
+   gave a 500 until it was fixed.
 
 Step 1 is the domain lesson. Step 4b is the concurrency lesson. Step 5 is the wall.
 Step 7 is the payoff.
