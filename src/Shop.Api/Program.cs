@@ -54,10 +54,6 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-
-var dataSource = app.Services.GetRequiredService<NpgsqlDataSource>();
-await MigrationsRunner.RunMigrations(dataSource,CancellationToken.None);
-
 app.MapControllers();
 
 app.UseHttpsRedirection();

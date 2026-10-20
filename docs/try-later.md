@@ -43,3 +43,25 @@ stored as amount + currency, so the data is ready for more than one.
 - Payment provider settlement in more than one currency.
 
 Out of scope in `docs/product/domain.md` §8 — this is an experiment, not a feature.
+
+---
+
+## When migrations run: startup, SQL script, bundle
+
+**Chosen instead (3c, 2026-10-20):** the CLI — `dotnet ef database update`, run by hand
+from a developer machine.
+
+**The alternatives:**
+- **At startup** — `await db.Database.MigrateAsync()` before `app.Run()`, where the
+  hand-rolled 3c runner sat.
+- **SQL script** — `dotnet ef migrations script --idempotent` produces a `.sql` file that
+  a person or a pipeline reviews, then runs.
+- **Bundle** — `dotnet ef migrations bundle` produces one executable (`efbundle`) that
+  applies migrations without the .NET SDK installed.
+
+**What to compare when trying them:**
+- Two app instances starting at once (the race from 3c): what EF 9+'s migration lock
+  does, and what a failed migration does to startup.
+- Which database permissions the app account needs in each option.
+- How each one fits the Phase 7 CI pipeline and deployment.
+- Rolling back a bad migration in each.
