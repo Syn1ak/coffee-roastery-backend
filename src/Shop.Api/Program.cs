@@ -7,7 +7,6 @@ using Shop.Api.Coffee;
 using Shop.Api.Configuration;
 using Shop.Api.HealthChecks;
 using Shop.Api.Hopper;
-using Shop.Application;
 using Shop.Application.Catalog;
 using Shop.Application.Catalog.ChangeBagPrice;
 using Shop.Application.Catalog.PublishCoffee;
@@ -54,6 +53,10 @@ builder.Services.AddHealthChecks()
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+
+var dataSource = app.Services.GetRequiredService<NpgsqlDataSource>();
+await MigrationsRunner.RunMigrations(dataSource,CancellationToken.None);
 
 app.MapControllers();
 
