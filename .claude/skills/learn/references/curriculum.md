@@ -47,8 +47,8 @@ Rules:
 | 2e | Minimal API vs controller | spike | **done** — 2026-10-03 · chose minimal APIs |
 | 3a | A database with no ORM | spike | **done** — 2026-10-07 · deleted at 3-grad |
 | 3b | Rows ↔ objects: the DbContext | real | **done** — 2026-10-18 · `ShopDb`, `CoffeeConfiguration`, EF-backed `CoffeeRepository` stay |
-| 3c | Schema changes as code: migrations | real | **next** — business gate not yet run |
-| 3d | Starting data: seeding | real | not started |
+| 3c | Schema changes as code: migrations | real | **done** — 2026-10-21 · `InitialCreate` migration stays, hand runner deleted |
+| 3d | Starting data: seeding | real | **next** — business gate not yet run |
 | 3-grad | Graduation: Steps 2 + 3 | graduation | not started |
 
 Commit after each. Small revertable commits are part of the method. Commit titles use
@@ -518,3 +518,67 @@ You will still create the table by hand in 3b. That is deliberate — 3c fixes i
 - [Backing fields](https://learn.microsoft.com/ef/core/modeling/backing-field)
 - [Owned entity types](https://learn.microsoft.com/ef/core/modeling/owned-entities) — one way to map a price
 - [Handling concurrency conflicts](https://learn.microsoft.com/ef/core/saving/concurrency) — EF's answer to 4b
+
+---
+
+## Exercise 3c — How does every copy of the database end up with the same shape?
+
+**Goal (real):** feel why schema changes need versioned, tracked code. The hand-written
+SQL files and runner are the first draft; EF migrations replace them in place.
+Migrations live in `Shop.Infrastructure/Persistance/Migrations/`.
+
+**Business:** none new — gate passed 2026-10-20 (moves an already-decided schema into
+code). Q22's open "starting stock mode for a new coffee" is untouched: `stock_mode` has
+no database default.
+
+### The task (done 2026-10-20 → 21)
+
+1. Clone: an empty `shop_clone` brought to the same shape as `shop` by hand.
+2. Index on `status` (partial, `WHERE status = 'Published'`) as a new numbered file,
+   applied to both databases.
+3. A startup runner for numbered SQL files with a `migrations_logs` table. Run against
+   `shop` crashed (tables built by hand, empty logbook) → fixed by a hand **baseline**
+   (logging 001–002 so the runner applied only 003).
+4. Drift wall: `.HasMaxLength(100)` (silent — nothing complains) and
+   `.HasColumnName("coffee_name")` (app starts, first query 500s). Nothing compares
+   `CoffeeConfiguration` with the real database.
+5. EF migrations: `dotnet-ef` 10.0.4 as a **local tool** (`dotnet-tools.json` at the repo
+   root), `Microsoft.EntityFrameworkCore.Design` in `Shop.Api`. First `InitialCreate`
+   differed from `shop` (no CHECKs, no defaults, plain `numeric`/`text`, no index, EF key
+   names, cascade FK) → `CoffeeConfiguration` brought up to match `shop` exactly
+   (check constraints and key names reuse Postgres's auto-generated names). EF forces
+   `ON DELETE CASCADE` on the owned prices; `shop`'s FK was altered to match (harmless
+   under R-10). Applied to an empty `shop_clone` with `database update --connection`;
+   `shop` baselined by hand-inserting its `__EFMigrationsHistory` row. Hand runner,
+   SQL files and `migrations_logs` deleted.
+
+Decided 2026-10-20: migrations are applied with the **CLI** (`dotnet ef database
+update`). Startup `MigrateAsync`, idempotent SQL script and bundle are parked in
+`docs/try-later.md`.
+
+Teach-back passed 2026-10-21: `__EFMigrationsHistory` replaces `migrations_logs`;
+`migrations add` diffs the model against `ShopDbModelSnapshot.cs`, never the database;
+`has-pending-model-changes` reports drift and exits non-zero (CI hook for Phase 7).
+
+Left for 3-grad: the `Persistance` folder name is misspelled (namespace says
+`Persistence`).
+
+### → Read now
+- [psql](https://www.postgresql.org/docs/current/app-psql.html) ·
+  [`CREATE DATABASE`](https://www.postgresql.org/docs/current/sql-createdatabase.html) ·
+  [`pg_dump`](https://www.postgresql.org/docs/current/app-pgdump.html)
+- [`CREATE INDEX`](https://www.postgresql.org/docs/current/sql-createindex.html) ·
+  [`ALTER TABLE`](https://www.postgresql.org/docs/current/sql-altertable.html)
+- [Transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html) ·
+  [Npgsql basic usage](https://www.npgsql.org/doc/basic-usage.html)
+
+### → Read only after you hit the wall (step 4)
+- [Migrations overview](https://learn.microsoft.com/ef/core/managing-schemas/migrations/)
+- [Managing migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/managing)
+- [Applying migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying)
+- [Design-time DbContext creation](https://learn.microsoft.com/ef/core/cli/dbcontext-creation)
+- [Migrations in a separate project](https://learn.microsoft.com/ef/core/managing-schemas/migrations/projects)
+
+### → Deeper, once it works
+- [Custom migration operations / raw SQL](https://learn.microsoft.com/ef/core/managing-schemas/migrations/operations)
+- [Migrations in team environments](https://learn.microsoft.com/ef/core/managing-schemas/migrations/teams)
