@@ -48,7 +48,7 @@ Rules:
 | 3a | A database with no ORM | spike | **done** — 2026-10-07 · deleted at 3-grad |
 | 3b | Rows ↔ objects: the DbContext | real | **done** — 2026-10-18 · `ShopDb`, `CoffeeConfiguration`, EF-backed `CoffeeRepository` stay |
 | 3c | Schema changes as code: migrations | real | **done** — 2026-10-21 · `InitialCreate` migration stays, hand runner deleted |
-| 3d | Starting data: seeding | real | **next** — business gate not yet run |
+| 3d | Starting data: seeding | real | **next** — gate passed 2026-10-21 (Q22, Q26) |
 | 3-grad | Graduation: Steps 2 + 3 | graduation | not started |
 
 Commit after each. Small revertable commits are part of the method. Commit titles use
@@ -582,3 +582,61 @@ Left for 3-grad: the `Persistance` folder name is misspelled (namespace says
 ### → Deeper, once it works
 - [Custom migration operations / raw SQL](https://learn.microsoft.com/ef/core/managing-schemas/migrations/operations)
 - [Migrations in team environments](https://learn.microsoft.com/ef/core/managing-schemas/migrations/teams)
+
+---
+
+## Exercise 3d — How does a fresh database get coffees in it, and only where it should?
+
+**Goal (real):** feel why starting data needs its own mechanism, separate from the schema
+and from normal requests, and why "which databases get this data" is a business answer.
+The sample coffees are real code and **stay** after graduation (development-only, per
+Q26). Seeding code lives in `Shop.Infrastructure/Persistance/` (it needs `ShopDb`);
+`Shop.Api` decides when it runs. Builds the "data seeding" part of the roadmap Phase 0
+row "Postgres + EF Core, first migrations".
+
+**Business:** Q1 (hybrid stock) · Q3 (filter and espresso are two products) · Q4 (bag
+sizes) · Q22 (each sample sets its own stock mode; new-coffee default = roast to order,
+decided 2026-10-21 but not coded until a create-coffee use case) · Q24 (lifecycle) ·
+Q26 (live shop opens empty, samples development-only, decided 2026-10-21) · R-10. Gate
+passed 2026-10-21.
+
+### The task
+
+1. Drop and recreate `shop_clone`, bring it to the current shape with migrations, point
+   the app at it, and call the published-coffees endpoint. Empty. Put three coffees with
+   prices in it by hand. *One sentence: what got worse?*
+2. Make the app put the samples in itself when it starts. Build them through `Coffee`
+   (constructor, `SetPrice`, `Publish`, `Retire`), not raw SQL: one published, one draft,
+   one retired. Start the app. Start it again. *What got worse?* Also: what happens if
+   the app starts against a database migrations have not reached yet?
+3. Stop the duplicates in the simplest way you can think of. Then add a fourth sample and
+   restart against the same database. Does it show up? *What got worse?*
+4. Add a filter **and** an espresso version of the same coffee: same name, two products
+   (Q3). Does your "is it already there?" check still tell them apart?
+5. Start the app as the **live shop** (Production environment) against `shop_clone`. The
+   connection string only lives in `appsettings.Development.json`, so you will have to
+   pass it in from outside. What is in the `coffees` table now? Which business decision
+   did that break? Fix it.
+6. Someone suggests: "put the samples next to the schema, so a fresh database gets them
+   the same way it gets its tables." Try it with **one** coffee in the model
+   configuration, generate a migration (do not apply it to `shop`), read the generated
+   file, then remove it. Answer: which databases will get these rows? What did it force
+   you to do about `Id`? Could you call `Publish()`? At most 15 minutes. The answers
+   matter more than a working result.
+
+### → Read now
+- [Collection expressions](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/collection-expressions) ·
+  [async / await](https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/)
+- [Resolve a service at app start up](https://learn.microsoft.com/aspnet/core/fundamentals/dependency-injection#resolve-a-service-at-app-startup) —
+  `ShopDb` is scoped, and `ValidateScopes` is on
+- [Basic save](https://learn.microsoft.com/ef/core/saving/basic)
+- For step 5: [Environments](https://learn.microsoft.com/aspnet/core/fundamentals/environments) ·
+  [Configuration from environment variables](https://learn.microsoft.com/aspnet/core/fundamentals/configuration/) (the `__` separator)
+
+### → Read only after you hit the wall (step 6)
+- [Data seeding](https://learn.microsoft.com/ef/core/modeling/data-seeding)
+
+### → Deeper, once it works
+- [Owned entity types](https://learn.microsoft.com/ef/core/modeling/owned-entities) — the owned-type part of seeding
+- [What's new in EF Core 9](https://learn.microsoft.com/ef/core/what-is-new/ef-core-9.0/whatsnew) — the seeding changes
+- [Bogus](https://github.com/bchavez/Bogus) — generated fake data, once three hand-written coffees stop being enough

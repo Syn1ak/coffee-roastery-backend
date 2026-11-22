@@ -276,10 +276,11 @@ reject it.
 | **Q19** | (Q1 = b or c) Which roast days, cut-off time, max kg per roast day? | Roast plan, "ships on" date | Mon + Thu roasting, cut-off 23:59 the day before, 60 kg capacity per day | |
 | **Q20** | "Notify me when back in stock"? | Extra feature | No — seasonal coffees rarely come back | |
 | **Q21** | The shop's name? | Not needed — just nicer than "Shop" | — | |
-| **Q22** | (Q1 = c) How is it decided whether a coffee is sold from roasted stock or roasted to order? | Whether a coffee carries a stock mode, and who sets it | Admin picks per coffee; new coffees default to roast to order | ✅ **(ii) admin picks per coffee** — 2026-10-07. Starting value for a new coffee: not decided yet |
+| **Q22** | (Q1 = c) How is it decided whether a coffee is sold from roasted stock or roasted to order? | Whether a coffee carries a stock mode, and who sets it | Admin picks per coffee; new coffees default to roast to order | ✅ **(ii) admin picks per coffee** — 2026-10-07. Starting value for a new coffee: ✅ **roast to order** — 2026-10-21 |
 | **Q23** | Which roast styles does the shop offer? | The allowed values of a coffee's roast style (Q3) | Filter and espresso | ✅ **(i) filter and espresso only** — 2026-10-08 |
 | **Q24** | A coffee's lifecycle (§5.1): is there a hidden draft state? What must be true to publish? Can a retired coffee come back? | Coffee states and their rules | Draft → published → retired. Publish needs at least one bag size with a price. Retired is final; next year's harvest is a new coffee | ✅ **all three defaults** — 2026-10-08 |
 | **Q25** | Can a draft that was never published be retired, or only a published coffee? | Which state changes `Retire` allows | Yes — a draft can be retired too (it cannot be deleted, R-10) | ✅ **yes, a draft can be retired** — 2026-10-08 |
+| **Q26** | Starting data: does the live shop open with coffees already in it, or empty? Are sample coffees for development allowed to reach the live shop? | Whether seed data is the real launch catalog or development-only. Under R-10 a coffee can never be deleted, so a sample coffee that reaches the live shop stays there forever (it can only be retired) | Live shop opens empty — admin enters the real catalog (or CSV import, §5.5). A few sample coffees exist only in development databases | ✅ **(i) live shop opens empty; sample coffees are development-only** — 2026-10-21 |
 
 ---
 

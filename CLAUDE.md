@@ -42,6 +42,9 @@ Open one only when the prompt actually touches its topic:
 - `docs/try-later.md` — alternatives the user parked to try once the app is finished
   (e.g. option A for data access, multi-currency). **Read before** proposing an
   alternative to something already chosen; **add to it** when the user parks one.
+- `docs/parked-questions.md` — concepts the user wants to understand deeply later but
+  parked mid-step. **Add to it** when the user parks a confusing topic; **read it** when
+  they ask what they parked or a step touches one of its topics.
 
 ASP.NET Core conventions are **not** in this list — they live in the
 `aspnet-conventions` skill, which loads itself when relevant and carries the
