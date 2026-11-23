@@ -15,6 +15,7 @@ using Shop.Domain;
 using Shop.Domain.Catalog;
 using Shop.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Shop.Infrastructure.Persistence.Seeding;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +54,12 @@ builder.Services.AddHealthChecks()
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var shopDb = scope.ServiceProvider.GetRequiredService<ShopDb>();
+    await SampleCoffees.SeedAsync(shopDb);
+}
 
 app.MapControllers();
 
