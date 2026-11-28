@@ -55,10 +55,13 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-await using (var scope = app.Services.CreateAsyncScope())
+if (app.Environment.IsDevelopment())
 {
-    var shopDb = scope.ServiceProvider.GetRequiredService<ShopDb>();
-    await SampleCoffees.SeedAsync(shopDb);
+    await using (var scope = app.Services.CreateAsyncScope())
+    {
+        var shopDb = scope.ServiceProvider.GetRequiredService<ShopDb>();
+        await SampleCoffees.SeedAsync(shopDb);
+    }
 }
 
 app.MapControllers();
