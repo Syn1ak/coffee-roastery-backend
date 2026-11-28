@@ -14,6 +14,13 @@ public static class SampleCoffees
         yirgacheffe.Publish();
         await AddIfMissingAsync(shopDb, yirgacheffe, ct);
 
+        // Published: the espresso roast of the same coffee, a separate product (Q3).
+        var yirgacheffeEspresso = new Coffee("Yirgacheffe Kochere", "Ethiopia", RoastStyle.Espresso, StockMode.Shelf);
+        yirgacheffeEspresso.SetPrice(BagSize.Grams250, new Money(15.00m, "EUR"));
+        yirgacheffeEspresso.SetPrice(BagSize.Kilogram1, new Money(50.00m, "EUR"));
+        yirgacheffeEspresso.Publish();
+        await AddIfMissingAsync(shopDb, yirgacheffeEspresso, ct);
+
         // Draft: priced, not yet on sale, roasted to order.
         var huila = new Coffee("Huila Pink Bourbon", "Colombia", RoastStyle.Espresso, StockMode.RoastToOrder);
         huila.SetPrice(BagSize.Grams250, new Money(16.00m, "EUR"));
@@ -38,7 +45,8 @@ public static class SampleCoffees
 
     private static async Task AddIfMissingAsync(ShopDb shopDb, Coffee coffee, CancellationToken ct)
     {
-        var exists = await shopDb.Coffees.AnyAsync(c => c.Name == coffee.Name && c.Origin == coffee.Origin, ct);
+        var exists = await shopDb.Coffees.AnyAsync(
+            c => c.Name == coffee.Name && c.Origin == coffee.Origin && c.RoastStyle == coffee.RoastStyle, ct);
         if (exists) return;
         shopDb.Coffees.Add(coffee);
     }
